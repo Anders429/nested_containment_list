@@ -72,5 +72,17 @@ let second_element = overlapping.next().unwrap();
 assert_eq!(second_element.value, &(6..7));
 ```
 
+## Performance
+
+### Construction
+Construction from a slice using `NestedContainmentList::from_slice()` has temporal complexity
+*O(n log(n))*. Insertion using `NestedContainmentList::insert()` has temporal complexity *O(log n)*.
+Similarly, removal using `NestedContainmentList::remove()` also has temporal complexity *O(log n)*.
+
+### Querying
+Querying for overlapping intervals with `NestedContainmentList::overlapping()` has temporal
+complexity *O(n + log(N))*, where *N* is the number of intervals stored within the Nested Containment
+List, and *n* is the number of intervals overlapping with the query.
+
 ## Minimum Supported Rust Version
 This crate is guaranteed to compile on stable `rustc 1.0.0` and up.
