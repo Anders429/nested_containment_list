@@ -1,0 +1,7 @@
+[package]
+name = "nested_containment_list"
+version = "0.1.0"
+authors = ["Anders Evensen"]
+
+[build-dependencies]
+autocfg = "1.0.1"
