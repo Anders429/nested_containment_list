@@ -2,6 +2,7 @@
 name = "nested_containment_list"
 version = "0.1.0"
 authors = ["Anders Evensen"]
+exclude = [".travis.yml"]
 
 [build-dependencies]
 autocfg = "1.0.1"
