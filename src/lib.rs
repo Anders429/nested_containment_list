@@ -12,8 +12,8 @@ pub trait Interval<B>
 where
     B: Ord,
 {
-    fn left_bound(&self) -> B;
-    fn right_bound(&self) -> B;
+    fn start(&self) -> B;
+    fn end(&self) -> B;
 }
 
 fn nestable_contains<B, I>(a: &I, b: &I) -> bool
@@ -21,9 +21,9 @@ where
     B: Ord,
     I: Interval<B>,
 {
-    Interval::left_bound(a) <= Interval::left_bound(b)
-        && Interval::left_bound(b) <= Interval::right_bound(b)
-        && Interval::right_bound(b) <= Interval::right_bound(a)
+    Interval::start(a) <= Interval::start(b)
+        && Interval::start(b) <= Interval::end(b)
+        && Interval::end(b) <= Interval::end(a)
 }
 
 fn nestable_ordering<B, I>(a: &I, b: &I) -> Ordering
@@ -31,13 +31,13 @@ where
     B: Ord,
     I: Interval<B>,
 {
-    if Interval::left_bound(a) < Interval::left_bound(b)
-        || Interval::left_bound(a) == Interval::left_bound(b)
-            && Interval::right_bound(a) > Interval::right_bound(b)
+    if Interval::start(a) < Interval::start(b)
+        || Interval::start(a) == Interval::start(b)
+            && Interval::end(a) > Interval::end(b)
     {
         Ordering::Less
-    } else if Interval::left_bound(a) > Interval::left_bound(b)
-        || Interval::right_bound(a) < Interval::right_bound(b)
+    } else if Interval::start(a) > Interval::start(b)
+        || Interval::end(a) < Interval::end(b)
     {
         Ordering::Greater
     } else {
@@ -50,10 +50,10 @@ where
     B: Ord,
     I: Interval<B>,
 {
-    Interval::left_bound(a) <= Interval::right_bound(b)
-        && Interval::right_bound(a) >= Interval::right_bound(b)
-        || Interval::left_bound(b) <= Interval::right_bound(a)
-            && Interval::right_bound(b) >= Interval::right_bound(a)
+    Interval::start(a) <= Interval::end(b)
+        && Interval::end(a) >= Interval::end(b)
+        || Interval::start(b) <= Interval::end(a)
+            && Interval::end(b) >= Interval::end(a)
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -222,8 +222,8 @@ where
     fn new(elements: &'a [Element<B, I>], query: &'a Q) -> Self {
         let start_index = match elements.binary_search_by(|element| {
             Ord::cmp(
-                &Interval::right_bound(query),
-                &Interval::right_bound(Borrow::borrow(&element.value)),
+                &Interval::end(query),
+                &Interval::end(Borrow::borrow(&element.value)),
             )
         }) {
             Ok(index) => index,

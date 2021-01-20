@@ -24,11 +24,11 @@ To allow a type to be stored and used with Nested Containment Lists, it must imp
 use nested_containment_list::Interval;
 
 impl Interval<usize> for MyStruct {
-    fn left_bound(&self) -> usize {
+    fn start(&self) -> usize {
         ...
     }
 
-    fn right_bound(&self) -> usize {
+    fn end(&self) -> usize {
         ...
     }
 }

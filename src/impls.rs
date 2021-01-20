@@ -7,11 +7,11 @@ impl<B> Interval<B> for Range<B>
 where
     B: Copy + Ord,
 {
-    fn left_bound(&self) -> B {
+    fn start(&self) -> B {
         min(self.start, self.end)
     }
 
-    fn right_bound(&self) -> B {
+    fn end(&self) -> B {
         max(self.start, self.end)
     }
 }
@@ -24,15 +24,15 @@ mod tests {
     fn range_ascending() {
         let range = 1..2;
 
-        assert_eq!(range.left_bound(), 1);
-        assert_eq!(range.right_bound(), 2);
+        assert_eq!(range.start(), 1);
+        assert_eq!(range.end(), 2);
     }
 
     #[test]
     fn range_descending() {
         let range = 2..1;
 
-        assert_eq!(range.left_bound(), 1);
-        assert_eq!(range.right_bound(), 2);
+        assert_eq!(range.start(), 1);
+        assert_eq!(range.end(), 2);
     }
 }
