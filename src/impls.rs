@@ -1,3 +1,6 @@
+#[cfg(rustc_1_36)]
+use core::ops::Range;
+#[cfg(not(rustc_1_36))]
 use std::ops::Range;
 use Interval;
 

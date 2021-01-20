@@ -94,7 +94,8 @@ complexity *O(n + log(N))*, where *N* is the number of intervals stored within t
 List, and *n* is the number of intervals overlapping with the query.
 
 ## Minimum Supported Rust Version
-This crate is guaranteed to compile on stable `rustc 1.0.0` and up.
+This crate is guaranteed to compile on stable `rustc 1.0.0` and up. Use in a `no_std` environment
+requires stable `rustc 1.36.0` and up, due to the use of `alloc`.
 
 ## License
 This project is licensed under either of

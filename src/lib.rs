@@ -1,9 +1,33 @@
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::iter::Chain;
-use std::iter::Iterator;
-use std::marker::PhantomData;
-use std::option;
+#![cfg_attr(rustc_1_36, no_std)]
+
+#[cfg(rustc_1_36)]
+extern crate alloc;
+
+#[cfg(rustc_1_36)]
+mod no_std_reexports {
+    pub use alloc::vec::Vec;
+    pub use core::borrow::Borrow;
+    pub use core::cmp::Ordering;
+    pub use core::iter::Chain;
+    pub use core::iter::Iterator;
+    pub use core::marker::PhantomData;
+    pub use core::option;
+}
+
+#[cfg(not(rustc_1_36))]
+mod std_reexports {
+    pub use std::borrow::Borrow;
+    pub use std::cmp::Ordering;
+    pub use std::iter::Chain;
+    pub use std::iter::Iterator;
+    pub use std::marker::PhantomData;
+    pub use std::option;
+}
+
+#[cfg(rustc_1_36)]
+use no_std_reexports::*;
+#[cfg(not(rustc_1_36))]
+use std_reexports::*;
 
 mod impls;
 
@@ -31,13 +55,10 @@ where
     I: Interval<B>,
 {
     if Interval::start(a) < Interval::start(b)
-        || Interval::start(a) == Interval::start(b)
-            && Interval::end(a) > Interval::end(b)
+        || Interval::start(a) == Interval::start(b) && Interval::end(a) > Interval::end(b)
     {
         Ordering::Less
-    } else if Interval::start(a) > Interval::start(b)
-        || Interval::end(a) < Interval::end(b)
-    {
+    } else if Interval::start(a) > Interval::start(b) || Interval::end(a) < Interval::end(b) {
         Ordering::Greater
     } else {
         Ordering::Equal
@@ -49,10 +70,8 @@ where
     B: Ord,
     I: Interval<B>,
 {
-    Interval::start(a) < Interval::end(b)
-        && Interval::end(a) >= Interval::end(b)
-        || Interval::start(b) < Interval::end(a)
-            && Interval::end(b) >= Interval::end(a)
+    Interval::start(a) < Interval::end(b) && Interval::end(a) >= Interval::end(b)
+        || Interval::start(b) < Interval::end(a) && Interval::end(b) >= Interval::end(a)
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -500,6 +519,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    #[cfg(rustc_1_36)]
+    use core::ops::Range;
+    #[cfg(not(rustc_1_36))]
     use std::ops::Range;
     use NestedContainmentList;
 
