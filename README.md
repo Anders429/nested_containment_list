@@ -5,7 +5,7 @@
 [![crates.io](https://img.shields.io/crates/v/nested_containment_list)](https://crates.io/crates/nested_containment_list)
 [![docs.rs](https://docs.rs/nested_containment_list/badge.svg)](https://docs.rs/nested_containment_list)
 [![MSRV](https://img.shields.io/badge/rustc-1.0.0+-yellow.svg)](#minimum-supported-rust-version)
-![License](https://img.shields.io/crates/l/nested_containment_list)
+[![License](https://img.shields.io/crates/l/nested_containment_list)](#license)
 
 Implementation of a Nested Containment List.
 
@@ -95,3 +95,15 @@ List, and *n* is the number of intervals overlapping with the query.
 
 ## Minimum Supported Rust Version
 This crate is guaranteed to compile on stable `rustc 1.0.0` and up.
+
+## License
+This project is licensed under either of
+
+* Apache License, Version 2.0,
+([LICENSE-APACHE](https://github.com/Anders429/nested_containment_list/blob/HEAD/LICENSE-APACHE) or
+http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license
+([LICENSE-MIT](https://github.com/Anders429/nested_containment_list/blob/HEAD/LICENSE-MIT) or
+http://opensource.org/licenses/MIT)
+
+at your option.
