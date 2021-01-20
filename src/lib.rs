@@ -1,6 +1,5 @@
 use std::borrow::Borrow;
 use std::cmp::Ordering;
-use std::collections::VecDeque;
 use std::iter::Chain;
 use std::iter::Iterator;
 use std::marker::PhantomData;
@@ -454,15 +453,15 @@ where
 
         // Depth-first construction.
         let mut elements: Vec<Element<B, I>> = Vec::with_capacity(values.len());
-        let mut sublist_indices: VecDeque<usize> = VecDeque::with_capacity(values.len());
+        let mut sublist_indices: Vec<usize> = Vec::with_capacity(values.len());
         for index in 0..values.len() {
             let value = values.remove(0);
             while !sublist_indices.is_empty() {
-                let sublist_index = sublist_indices.pop_back().unwrap();
+                let sublist_index = sublist_indices.pop().unwrap();
 
                 if nestable_contains(&elements[sublist_index].value, &value) {
                     // We are within the previous sublist.
-                    sublist_indices.push_back(sublist_index);
+                    sublist_indices.push(sublist_index);
                     break;
                 } else {
                     // We are no longer within the previous sublist.
@@ -471,7 +470,7 @@ where
                 }
             }
 
-            sublist_indices.push_back(index);
+            sublist_indices.push(index);
             elements.push(Element {
                 value: value,
                 sublist_len: 0,
