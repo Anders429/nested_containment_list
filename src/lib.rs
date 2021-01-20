@@ -295,6 +295,10 @@ where
         self.elements.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
+
     pub fn capacity(&self) -> usize {
         self.elements.capacity()
     }
