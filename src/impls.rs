@@ -1,7 +1,7 @@
-#[cfg(rustc_1_36)]
-use core::ops::Range;
 #[cfg(not(rustc_1_36))]
-use std::ops::Range;
+extern crate std as core;
+
+use core::ops::Range;
 use Interval;
 
 impl<B> Interval<B> for Range<B>
