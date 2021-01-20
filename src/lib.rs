@@ -521,6 +521,16 @@ mod tests {
     }
 
     #[test]
+    fn is_empty() {
+        assert!(NestedContainmentList::<usize, Range<usize>>::new().is_empty());
+    }
+
+    #[test]
+    fn is_not_empty() {
+        assert!(!NestedContainmentList::from_slice(&[1..2]).is_empty());
+    }
+
+    #[test]
     fn insert_on_empty() {
         let mut nclist = NestedContainmentList::new();
 
