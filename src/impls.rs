@@ -1,5 +1,3 @@
-use std::cmp::max;
-use std::cmp::min;
 use std::ops::Range;
 use Interval;
 
@@ -8,11 +6,11 @@ where
     B: Copy + Ord,
 {
     fn start(&self) -> B {
-        min(self.start, self.end)
+        self.start
     }
 
     fn end(&self) -> B {
-        max(self.start, self.end)
+        self.end
     }
 }
 
@@ -21,16 +19,8 @@ mod tests {
     use Interval;
 
     #[test]
-    fn range_ascending() {
+    fn range() {
         let range = 1..2;
-
-        assert_eq!(range.start(), 1);
-        assert_eq!(range.end(), 2);
-    }
-
-    #[test]
-    fn range_descending() {
-        let range = 2..1;
 
         assert_eq!(range.start(), 1);
         assert_eq!(range.end(), 2);
