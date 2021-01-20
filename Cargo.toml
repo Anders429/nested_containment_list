@@ -2,7 +2,7 @@
 name = "nested_containment_list"
 version = "0.1.0"
 authors = ["Anders Evensen"]
-description = ["A data structure for efficiently storing and querying nested intervals."]
+description = "A data structure for efficiently storing and querying nested intervals."
 license = "MIT OR Apache-2.0"
 keywords = ["nested", "containment", "list", "interval", "overlapping"]
 categories = ["algorithms", "data-structures", "science"]

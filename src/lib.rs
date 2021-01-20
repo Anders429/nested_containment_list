@@ -8,7 +8,7 @@ use std::option;
 
 mod impls;
 
-pub trait Nestable<B>
+pub trait Interval<B>
 where
     B: Ord,
 {
@@ -16,28 +16,28 @@ where
     fn right_bound(&self) -> B;
 }
 
-fn nestable_contains<B, N>(a: &N, b: &N) -> bool
+fn nestable_contains<B, I>(a: &I, b: &I) -> bool
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    Nestable::left_bound(a) <= Nestable::left_bound(b)
-        && Nestable::left_bound(b) <= Nestable::right_bound(b)
-        && Nestable::right_bound(b) <= Nestable::right_bound(a)
+    Interval::left_bound(a) <= Interval::left_bound(b)
+        && Interval::left_bound(b) <= Interval::right_bound(b)
+        && Interval::right_bound(b) <= Interval::right_bound(a)
 }
 
-fn nestable_ordering<B, N>(a: &N, b: &N) -> Ordering
+fn nestable_ordering<B, I>(a: &I, b: &I) -> Ordering
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    if Nestable::left_bound(a) < Nestable::left_bound(b)
-        || Nestable::left_bound(a) == Nestable::left_bound(b)
-            && Nestable::right_bound(a) > Nestable::right_bound(b)
+    if Interval::left_bound(a) < Interval::left_bound(b)
+        || Interval::left_bound(a) == Interval::left_bound(b)
+            && Interval::right_bound(a) > Interval::right_bound(b)
     {
         Ordering::Less
-    } else if Nestable::left_bound(a) > Nestable::left_bound(b)
-        || Nestable::right_bound(a) < Nestable::right_bound(b)
+    } else if Interval::left_bound(a) > Interval::left_bound(b)
+        || Interval::right_bound(a) < Interval::right_bound(b)
     {
         Ordering::Greater
     } else {
@@ -45,56 +45,56 @@ where
     }
 }
 
-fn nestable_overlap<B, N>(a: &N, b: &N) -> bool
+fn nestable_overlap<B, I>(a: &I, b: &I) -> bool
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    Nestable::left_bound(a) <= Nestable::right_bound(b)
-        && Nestable::right_bound(a) >= Nestable::right_bound(b)
-        || Nestable::left_bound(b) <= Nestable::right_bound(a)
-            && Nestable::right_bound(b) >= Nestable::right_bound(a)
+    Interval::left_bound(a) <= Interval::right_bound(b)
+        && Interval::right_bound(a) >= Interval::right_bound(b)
+        || Interval::left_bound(b) <= Interval::right_bound(a)
+            && Interval::right_bound(b) >= Interval::right_bound(a)
 }
 
 #[derive(Debug, Eq, PartialEq)]
-struct Element<B, N>
+struct Element<B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    value: N,
+    value: I,
     sublist_len: usize,
     _marker: PhantomData<B>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct SublistElement<'a, B, N>
+pub struct SublistElement<'a, B, I>
 where
     B: Ord + 'a,
-    N: Nestable<B> + 'a,
+    I: Interval<B> + 'a,
 {
-    pub value: &'a N,
-    sublist_elements: &'a [Element<B, N>],
+    pub value: &'a I,
+    sublist_elements: &'a [Element<B, I>],
     _marker: PhantomData<B>,
 }
 
-impl<'a, B, N> SublistElement<'a, B, N>
+impl<'a, B, I> SublistElement<'a, B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    pub fn sublist(&self) -> Sublist<'a, B, N> {
+    pub fn sublist(&self) -> Sublist<'a, B, I> {
         Sublist::new(self.sublist_elements)
     }
 }
 
-impl<'a, B, N> IntoIterator for SublistElement<'a, B, N>
+impl<'a, B, I> IntoIterator for SublistElement<'a, B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
     type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Sublist<'a, B, N>>;
+    type IntoIter = Chain<option::IntoIter<Self::Item>, Sublist<'a, B, I>>;
 
     fn into_iter(self) -> Self::IntoIter {
         Some(SublistElement {
@@ -108,21 +108,21 @@ where
 }
 
 #[derive(Debug)]
-pub struct Sublist<'a, B, N>
+pub struct Sublist<'a, B, I>
 where
     B: Ord + 'a,
-    N: Nestable<B> + 'a,
+    I: Interval<B> + 'a,
 {
     index: usize,
-    elements: &'a [Element<B, N>],
+    elements: &'a [Element<B, I>],
 }
 
-impl<'a, B, N> Sublist<'a, B, N>
+impl<'a, B, I> Sublist<'a, B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    fn new(elements: &'a [Element<B, N>]) -> Self {
+    fn new(elements: &'a [Element<B, I>]) -> Self {
         Sublist {
             index: 0,
             elements: elements,
@@ -130,12 +130,12 @@ where
     }
 }
 
-impl<'a, B, N> Iterator for Sublist<'a, B, N>
+impl<'a, B, I> Iterator for Sublist<'a, B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    type Item = SublistElement<'a, B, N>;
+    type Item = SublistElement<'a, B, I>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.elements.len() {
@@ -159,37 +159,37 @@ where
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct OverlappingElement<'a, B, Q, N>
+pub struct OverlappingElement<'a, B, Q, I>
 where
     B: Ord + 'a,
-    Q: Nestable<B> + 'a,
-    N: Nestable<B> + Borrow<Q> + 'a,
+    Q: Interval<B> + 'a,
+    I: Interval<B> + Borrow<Q> + 'a,
 {
-    pub value: &'a N,
-    sublist_elements: &'a [Element<B, N>],
+    pub value: &'a I,
+    sublist_elements: &'a [Element<B, I>],
     query: &'a Q,
     _marker: PhantomData<B>,
 }
 
-impl<'a, B, Q, N> OverlappingElement<'a, B, Q, N>
+impl<'a, B, Q, I> OverlappingElement<'a, B, Q, I>
 where
     B: Ord,
-    Q: Nestable<B>,
-    N: Nestable<B> + Borrow<Q>,
+    Q: Interval<B>,
+    I: Interval<B> + Borrow<Q>,
 {
-    pub fn sublist(&self) -> Overlapping<'a, B, Q, N> {
+    pub fn sublist(&self) -> Overlapping<'a, B, Q, I> {
         Overlapping::new(self.sublist_elements, self.query)
     }
 }
 
-impl<'a, B, Q, N> IntoIterator for OverlappingElement<'a, B, Q, N>
+impl<'a, B, Q, I> IntoIterator for OverlappingElement<'a, B, Q, I>
 where
     B: Ord,
-    Q: Nestable<B>,
-    N: Nestable<B> + Borrow<Q>,
+    Q: Interval<B>,
+    I: Interval<B> + Borrow<Q>,
 {
     type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Overlapping<'a, B, Q, N>>;
+    type IntoIter = Chain<option::IntoIter<Self::Item>, Overlapping<'a, B, Q, I>>;
 
     fn into_iter(self) -> Self::IntoIter {
         Some(OverlappingElement {
@@ -203,27 +203,27 @@ where
     }
 }
 
-pub struct Overlapping<'a, B, Q, N>
+pub struct Overlapping<'a, B, Q, I>
 where
     B: Ord + 'a,
-    Q: Nestable<B> + 'a,
-    N: Nestable<B> + Borrow<Q> + 'a,
+    Q: Interval<B> + 'a,
+    I: Interval<B> + Borrow<Q> + 'a,
 {
-    sublist: Sublist<'a, B, N>,
+    sublist: Sublist<'a, B, I>,
     query: &'a Q,
 }
 
-impl<'a, B, Q, N> Overlapping<'a, B, Q, N>
+impl<'a, B, Q, I> Overlapping<'a, B, Q, I>
 where
     B: Ord,
-    Q: Nestable<B>,
-    N: Nestable<B> + Borrow<Q>,
+    Q: Interval<B>,
+    I: Interval<B> + Borrow<Q>,
 {
-    fn new(elements: &'a [Element<B, N>], query: &'a Q) -> Self {
+    fn new(elements: &'a [Element<B, I>], query: &'a Q) -> Self {
         let start_index = match elements.binary_search_by(|element| {
             Ord::cmp(
-                &Nestable::right_bound(query),
-                &Nestable::right_bound(Borrow::borrow(&element.value)),
+                &Interval::right_bound(query),
+                &Interval::right_bound(Borrow::borrow(&element.value)),
             )
         }) {
             Ok(index) => index,
@@ -239,13 +239,13 @@ where
     }
 }
 
-impl<'a, B, Q, N> Iterator for Overlapping<'a, B, Q, N>
+impl<'a, B, Q, I> Iterator for Overlapping<'a, B, Q, I>
 where
     B: Ord,
-    Q: Nestable<B>,
-    N: Nestable<B> + Borrow<Q>,
+    Q: Interval<B>,
+    I: Interval<B> + Borrow<Q>,
 {
-    type Item = OverlappingElement<'a, B, Q, N>;
+    type Item = OverlappingElement<'a, B, Q, I>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(sublist_element) = self.sublist.next() {
@@ -266,18 +266,18 @@ where
 }
 
 #[derive(Debug)]
-pub struct NestedContainmentList<B, N>
+pub struct NestedContainmentList<B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
-    elements: Vec<Element<B, N>>,
+    elements: Vec<Element<B, I>>,
 }
 
-impl<B, N> NestedContainmentList<B, N>
+impl<B, I> NestedContainmentList<B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
     pub fn new() -> Self {
         NestedContainmentList {
@@ -299,19 +299,19 @@ where
         self.elements.capacity()
     }
 
-    pub fn sublist<'a>(&'a self) -> Sublist<'a, B, N> {
+    pub fn sublist<'a>(&'a self) -> Sublist<'a, B, I> {
         Sublist::new(&self.elements)
     }
 
-    pub fn overlapping<'a, Q>(&'a self, query: &'a Q) -> Overlapping<'a, B, Q, N>
+    pub fn overlapping<'a, Q>(&'a self, query: &'a Q) -> Overlapping<'a, B, Q, I>
     where
-        Q: Nestable<B>,
-        N: Borrow<Q>,
+        Q: Interval<B>,
+        I: Borrow<Q>,
     {
         Overlapping::new(&self.elements, query)
     }
 
-    pub fn insert(&mut self, value: N) {
+    pub fn insert(&mut self, value: I) {
         // Direct insertion.
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
         let mut indices = 0..self.elements.len();
@@ -373,8 +373,8 @@ where
 
     pub fn remove<Q>(&mut self, value: &Q) -> bool
     where
-        Q: Nestable<B>,
-        N: Borrow<Q>,
+        Q: Interval<B>,
+        I: Borrow<Q>,
     {
         // Direct removal.
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
@@ -419,10 +419,10 @@ where
 // alternative sort_by.
 #[cfg(rustc_1_20)]
 #[inline]
-fn sort_values<B, N>(values: &mut Vec<N>)
+fn sort_values<B, I>(values: &mut Vec<I>)
 where
     B: Ord,
-    N: Nestable<B> + Clone,
+    I: Interval<B> + Clone,
 {
     values.sort_unstable_by(nestable_ordering);
 }
@@ -430,26 +430,26 @@ where
 // Otherwise, we use the regular sort_by.
 #[cfg(not(rustc_1_20))]
 #[inline]
-fn sort_values<B, N>(values: &mut Vec<N>)
+fn sort_values<B, I>(values: &mut Vec<I>)
 where
     B: Ord,
-    N: Nestable<B> + Clone,
+    I: Interval<B> + Clone,
 {
     values.sort_by(nestable_ordering);
 }
 
-impl<B, N> NestedContainmentList<B, N>
+impl<B, I> NestedContainmentList<B, I>
 where
     B: Ord,
-    N: Nestable<B> + Clone,
+    I: Interval<B> + Clone,
 {
-    pub fn from_slice(values: &[N]) -> Self {
+    pub fn from_slice(values: &[I]) -> Self {
         // Sort the elements.
         let mut values = values.to_vec();
         sort_values(&mut values);
 
         // Depth-first construction.
-        let mut elements: Vec<Element<B, N>> = Vec::with_capacity(values.len());
+        let mut elements: Vec<Element<B, I>> = Vec::with_capacity(values.len());
         let mut sublist_indices: VecDeque<usize> = VecDeque::with_capacity(values.len());
         for index in 0..values.len() {
             let value = values.remove(0);
@@ -485,10 +485,10 @@ where
     }
 }
 
-impl<B, N> Default for NestedContainmentList<B, N>
+impl<B, I> Default for NestedContainmentList<B, I>
 where
     B: Ord,
-    N: Nestable<B>,
+    I: Interval<B>,
 {
     fn default() -> Self {
         Self::new()

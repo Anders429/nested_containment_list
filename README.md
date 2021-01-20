@@ -18,12 +18,12 @@ implementation provided here allows storage and querying of generic types using 
 ## Usage
 
 To allow a type to be stored and used with Nested Containment Lists, it must implement the
-`Nestable` trait.
+`Interval` trait.
 
 ```rust
-use nested_containment_list::Nestable;
+use nested_containment_list::Interval;
 
-impl Nestable<usize> for MyStruct {
+impl Interval<usize> for MyStruct {
     fn left_bound(&self) -> usize {
         ...
     }
@@ -36,7 +36,7 @@ impl Nestable<usize> for MyStruct {
 
 The type can then be stored within a Nested Containment List.
 
-Note that the `Nestable` trait is already implemented for `Range`. A `Range` can therefore be used
+Note that the `Interval` trait is already implemented for `Range`. A `Range` can therefore be used
 in Nested Containment Lists like so:
 
 ```rust

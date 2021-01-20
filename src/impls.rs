@@ -1,9 +1,9 @@
 use std::cmp::max;
 use std::cmp::min;
 use std::ops::Range;
-use Nestable;
+use Interval;
 
-impl<B> Nestable<B> for Range<B>
+impl<B> Interval<B> for Range<B>
 where
     B: Copy + Ord,
 {
@@ -18,7 +18,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use Nestable;
+    use Interval;
 
     #[test]
     fn range_ascending() {
