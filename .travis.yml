@@ -8,6 +8,18 @@ jobs:
         - cargo generate-lockfile
         - cargo test --verbose
     - rust: stable
+      env:
+        - LABEL="no_std"
+      script:
+        - rustup target add thumbv6m-none-eabi
+        - cargo build --target thumbv6m-none-eabi --verbose
+    - rust: 1.36.0
+      env:
+        - LABEL="no_std msrv"
+      script:
+        - rustup target add thumbv6m-none-eabi
+        - cargo build --target thumbv6m-none-eabi --verbose
+    - rust: stable
     - rust: nightly
     - rust: beta
   allow_failures:
