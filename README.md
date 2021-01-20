@@ -99,7 +99,7 @@ This crate is guaranteed to compile on stable `rustc 1.0.0` and up.
 ## License
 This project is licensed under either of
 
-* Apache License, Version 2.0,
+* Apache License, Version 2.0
 ([LICENSE-APACHE](https://github.com/Anders429/nested_containment_list/blob/HEAD/LICENSE-APACHE) or
 http://www.apache.org/licenses/LICENSE-2.0)
 * MIT license
