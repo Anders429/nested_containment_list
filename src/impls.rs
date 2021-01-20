@@ -4,14 +4,18 @@ extern crate std as core;
 use core::ops::Range;
 use Interval;
 
+/// A `Range`'s `Interval` is defined to be `[start, end)`, where `start` is the
+/// `Range`'s `start` field, and `end` is the `Range`'s `end` field.
 impl<B> Interval<B> for Range<B>
 where
     B: Copy + Ord,
 {
+    /// The `start` field.
     fn start(&self) -> B {
         self.start
     }
 
+    /// The `end` field.
     fn end(&self) -> B {
         self.end
     }
