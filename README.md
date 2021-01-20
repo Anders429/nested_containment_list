@@ -9,9 +9,11 @@
 
 Implementation of a Nested Containment List.
 
-A Nested Containment List, as presented by Alexander V. Alekseyenko and Christopher J. Lee in their 
-[2007 *Bioinformations* publication](https://doi.org/10.1093/bioinformatics/btl647), is a data
-structure for efficiently storing and querying intervals.
+A Nested Containment List is a data structure for efficiently storing and querying intervals. It is
+based on the Nested Containment List data structure set forth by Alexander V. Alekseyenko and
+Christopher J. Lee in their
+[2007 *Bioinformations* publication](https://doi.org/10.1093/bioinformatics/btl647). The
+implementation provided here allows storage and querying of generic types using generical bounds.
 
 ## Usage
 
