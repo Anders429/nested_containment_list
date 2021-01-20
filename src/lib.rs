@@ -2,32 +2,18 @@
 
 #[cfg(rustc_1_36)]
 extern crate alloc;
-
-#[cfg(rustc_1_36)]
-mod no_std_reexports {
-    pub use alloc::vec::Vec;
-    pub use core::borrow::Borrow;
-    pub use core::cmp::Ordering;
-    pub use core::iter::Chain;
-    pub use core::iter::Iterator;
-    pub use core::marker::PhantomData;
-    pub use core::option;
-}
-
 #[cfg(not(rustc_1_36))]
-mod std_reexports {
-    pub use std::borrow::Borrow;
-    pub use std::cmp::Ordering;
-    pub use std::iter::Chain;
-    pub use std::iter::Iterator;
-    pub use std::marker::PhantomData;
-    pub use std::option;
-}
-
-#[cfg(rustc_1_36)]
-use no_std_reexports::*;
+extern crate std as alloc;
 #[cfg(not(rustc_1_36))]
-use std_reexports::*;
+extern crate std as core;
+
+use alloc::vec::Vec;
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::iter::Chain;
+use core::iter::Iterator;
+use core::marker::PhantomData;
+use core::option;
 
 mod impls;
 
