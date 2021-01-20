@@ -1,5 +1,5 @@
 language: rust
-matrix:
+jobs:
   include:
     - rust: 1.0.0
       env:
