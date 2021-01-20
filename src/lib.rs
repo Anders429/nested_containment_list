@@ -50,9 +50,9 @@ where
     B: Ord,
     I: Interval<B>,
 {
-    Interval::start(a) <= Interval::end(b)
+    Interval::start(a) < Interval::end(b)
         && Interval::end(a) >= Interval::end(b)
-        || Interval::start(b) <= Interval::end(a)
+        || Interval::start(b) < Interval::end(a)
             && Interval::end(b) >= Interval::end(a)
 }
 
@@ -699,7 +699,7 @@ mod tests {
     fn overlapping() {
         let nclist = NestedContainmentList::from_slice(&[1..5, 3..4, 2..4, 6..7]);
 
-        let query = 5..7;
+        let query = 4..7;
         let mut overlapping = nclist.overlapping(&query);
 
         let first_element = overlapping.next().unwrap();

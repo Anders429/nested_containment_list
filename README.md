@@ -68,7 +68,7 @@ assert_eq!(second_element.value, &(6..7));
 
 // .overlapping() iterates over only stored data overlapping with the query, again through a nested
 // Iterator.
-let mut overlapping = nclist.overlapping(5..7);
+let mut overlapping = nclist.overlapping(4..7);
 
 let first_element = overlapping.next().unwrap();
 // The first element is 1..5, as before.
