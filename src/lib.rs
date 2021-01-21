@@ -301,6 +301,72 @@ where
     }
 }
 
+/// Data structure for efficient storage and querying of [`Interval`]s.
+///
+/// # Usage
+///
+/// A `NestedContainmentList` is a collection of [`Interval`]s, and can be used similar to other
+/// collections. It has a [`len()`] and a [`capacity()`], allows for mutation through [`insert()`]
+/// and [`remove()`]. A main difference between `NestedContainmentList` and other Rust collections
+/// is how its contents are accessed: they may be iterated over through [`overlapping()`] and
+/// [`sublist()`]. For further details, see [Data Access](#data-access).
+///
+/// ## Construction
+///
+/// A `NestedContainmentList` stores [`Interval`]s in a nested structure to allow for fast querying.
+/// Construction of a `NestedContainmentList` has temporal complexity *O(n log(n))*, where *n* is
+/// the number of [`Interval`]s being stored. Both insertion and removal, with [`insert()`] and
+/// [`remove()`] respectively, into a `NestedContainmentList` has temporal complexity *O(log(n))*,
+/// where *n* is the number of [`Interval`]s currently stored.
+///
+/// ### Example
+/// Construction of a `NestedContainmentList` can be done as follows:
+///
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+///
+/// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
+/// ```
+///
+/// ## Data Access
+///
+/// When data is stored within a `NestedContainmentList`, it is typically accessed in two ways:
+///
+/// * Querying for [`Interval`]s overlapping an [`Interval`], using the [`overlapping()`] method.
+/// * Interating through all [`Interval`]s in a nested [`Iterator`] structure, using the
+/// [`sublist()`] method.
+///
+/// Both methods return a nested [`Iterator`] structure, with the difference being that access
+/// through [`overlapping()`] only iterates over [`Interval`]s that overlap with the query
+/// [`Interval`]. For details on the [`Iterator`]s returned by these methods, see the documentation
+/// for [`Overlapping`] and [`Sublist`].
+///
+/// Querying using [`overlapping()`] has temporal complexity *O(n + log(N))*, where *N* is the
+/// number of [`Interval`]s stored, and *n* is the number of intervals overlapping with the query
+/// [`Interval`].
+///
+/// ### Example
+/// Access using either method can be done as follows:
+///
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+///
+/// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
+///
+/// // Creates a Sublist Iterator.
+/// let mut sublist = nclist.sublist();
+///
+/// // Creates an Overlapping Iterator.
+/// let mut overlapping = nclist.overlapping(&(4..6));
+/// ```
+///
+/// [`capacity()`]: Self::capacity()
+/// [`insert()`]: Self::insert()
+/// [`len()`]: Self::len()
+/// [`overlapping()`]: Self::overlapping()
+/// [`remove()`]: Self::remove()
+/// [`sublist()`]: Self::sublist()
+/// [`Iterator`]: core::iter::Iterator
 #[derive(Debug)]
 pub struct NestedContainmentList<B, I>
 where
