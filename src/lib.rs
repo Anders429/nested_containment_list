@@ -17,11 +17,43 @@ use core::option;
 
 mod impls;
 
+/// Trait for values that are intervals.
+///
+/// Here, an interval contains all values between the interval's [`start()`] and [`end()`],
+/// **including** [`start()`] and **excluding** [`end()`].
+///
+/// The bounding type `B` of the interval may be any type which implements [`Ord`].
+///
+/// # Example
+/// ```
+/// use nested_containment_list::Interval;
+///
+/// struct Foo {
+///     start: usize,
+///     end: usize,
+/// }
+///
+/// impl Interval<usize> for Foo {
+///     fn start(&self) -> usize {
+///         self.start
+///     }
+///
+///     fn end(&self) -> usize {
+///         self.end
+///     }
+/// }
+/// ```
+///
+/// [`start()`]: Self::start()
+/// [`end()`]: Self::end()
+/// ['Ord']: std::cmp::Ord
 pub trait Interval<B>
 where
     B: Ord,
 {
+    /// The lower bound of the interval (inclusive).
     fn start(&self) -> B;
+    /// The upper bound of the interval (exclusive).
     fn end(&self) -> B;
 }
 
