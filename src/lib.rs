@@ -470,6 +470,41 @@ where
         self.elements.capacity()
     }
 
+    /// Returns a [`Sublist`] [`Iterator`] over all elements within the `NestedContainmentList`.
+    ///
+    /// The [`Sublist`] is a nested [`Iterator`] over the values contained. All [`Interval`]s
+    /// contained within other [`Interval`]s in the collection are accessed as nested [`Sublist`]s
+    /// under their outer-most values.
+    ///
+    /// Iterating using this method is very similar to iterating using the [`overlapping()`] method.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
+    /// let mut sublist = nclist.sublist();
+    ///
+    /// let first_element = sublist.next().unwrap();
+    /// let second_element = sublist.next().unwrap();
+    ///
+    /// // The outermost elements are accessed directly.
+    /// assert_eq!(first_element.value, &(1..5));
+    /// assert_eq!(second_element.value, &(5..7));
+    ///
+    /// // Contained elements are accessed through their containing element's sublist.
+    /// let mut inner_sublist = first_element.sublist();
+    /// let inner_element = inner_sublist.next().unwrap();
+    /// assert_eq!(inner_element.value, &(2..4));
+    ///
+    /// // Further nested elements are accessed in further nested iterators.
+    /// let mut inner_inner_sublist = inner_element.sublist();
+    /// let inner_inner_element = inner_inner_sublist.next().unwrap();
+    /// assert_eq!(inner_inner_element.value, &(3..4));
+    /// ```
+    ///
+    /// [`overlapping()`]: Self::overlapping()
+    /// [`Iterator`]: core::iter::Iterator
     pub fn sublist<'a>(&'a self) -> Sublist<'a, B, I> {
         Sublist::new(&self.elements)
     }
