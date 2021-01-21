@@ -357,7 +357,8 @@ where
 /// let mut sublist = nclist.sublist();
 ///
 /// // Creates an Overlapping Iterator.
-/// let mut overlapping = nclist.overlapping(&(4..6));
+/// let query = 4..6;
+/// let mut overlapping = nclist.overlapping(&query);
 /// ```
 ///
 /// [`capacity()`]: Self::capacity()
