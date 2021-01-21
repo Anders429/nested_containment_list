@@ -103,12 +103,42 @@ where
     _marker: PhantomData<B>,
 }
 
+/// An element contained within a [`Sublist`].
+///
+/// This element allows access to its contained value `I` and its sub-elements.
+///
+/// A `SublistElement` is usually obtained from iterating over a `Sublist`.
+///
+/// # Example
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+///
+/// let nclist = NestedContainmentList::from_slice(&[1..4, 2..3]);
+/// let mut sublist = nclist.sublist();
+///
+/// let sublist_element = sublist.next().unwrap();
+/// assert_eq!(sublist_element.value, &(1..4));
+///
+/// let inner_sublist_element = sublist_element.sublist().next().unwrap();
+/// assert_eq!(inner_sublist_element.value, &(2..3));
+/// ```
 #[derive(Debug, Eq, PartialEq)]
 pub struct SublistElement<'a, B, I>
 where
     B: Ord + 'a,
     I: Interval<B> + 'a,
 {
+    /// The element's contained [`Interval`].
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..2]);
+    /// let mut sublist = nclist.sublist();
+    ///
+    /// let sublist_element = sublist.next().unwrap();
+    /// assert_eq!(sublist_element.value, &(1..2));
     pub value: &'a I,
     sublist_elements: &'a [Element<B, I>],
     _marker: PhantomData<B>,
@@ -119,6 +149,24 @@ where
     B: Ord,
     I: Interval<B>,
 {
+    /// Return a [`Sublist`] [`Iterator`] over this element's contained sublist.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 3..4]);
+    /// let mut sublist = nclist.sublist();
+    ///
+    /// let sublist_element = sublist.next().unwrap();
+    /// assert_eq!(sublist_element.value, &(1..5));
+    ///
+    /// let mut inner_sublist = sublist_element.sublist();
+    /// assert_eq!(inner_sublist.next().unwrap().value, &(2..3));
+    /// assert_eq!(inner_sublist.next().unwrap().value, &(3..4));
+    /// ```
+    ///
+    /// [`Iterator`]: core::iter::Iterator
     pub fn sublist(&self) -> Sublist<'a, B, I> {
         Sublist::new(self.sublist_elements)
     }
@@ -132,6 +180,25 @@ where
     type Item = Self;
     type IntoIter = Chain<option::IntoIter<Self::Item>, Sublist<'a, B, I>>;
 
+    /// Convert the element into an iterator, first returning the element's `value`, then each of
+    /// the topmost elements in the element's sublist.
+    ///
+    /// This can conceptually be thought of as flattening the element with its top-most sublist.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 3..4]);
+    /// let mut sublist = nclist.sublist();
+    ///
+    /// let sublist_element = sublist.next().unwrap();
+    ///
+    /// let mut sublist_element_iter = sublist_element.into_iter();
+    /// assert_eq!(sublist_element_iter.next().unwrap().value, &(1..5));
+    /// assert_eq!(sublist_element_iter.next().unwrap().value, &(2..3));
+    /// assert_eq!(sublist_element_iter.next().unwrap().value, &(3..4));
+    /// ```
     fn into_iter(self) -> Self::IntoIter {
         Some(SublistElement {
             value: self.value,
