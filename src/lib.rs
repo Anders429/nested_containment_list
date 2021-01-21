@@ -557,6 +557,18 @@ where
         }
     }
 
+    /// Remove the specified value from the `NestedContainmentList`.
+    ///
+    /// This removal preserves the internal nested structure of the container, and has temporal
+    /// complexity *O(log(n))*.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4]);
+    /// assert!(nclist.remove(&(2..4)));
+    /// ```
     pub fn remove<Q>(&mut self, value: &Q) -> bool
     where
         Q: Interval<B>,
