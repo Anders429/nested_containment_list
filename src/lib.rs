@@ -614,6 +614,20 @@ where
     B: Ord,
     I: Interval<B> + Clone,
 {
+    /// Construct a `NestedContainmentList` from a slice.
+    ///
+    /// The elements within the slice are cloned into the new `NestedContainmentList`.
+    ///
+    /// This construction has temporal complexity of *O(n log(n))*, where *n* is the length of the
+    /// slice. If you already have a collection of [`Interval`]s that you wish to use to create a
+    /// `NestedContainmentList`, this is likely the most efficient way to do so.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
+    /// ```
     pub fn from_slice(values: &[I]) -> Self {
         // Sort the elements.
         let mut values = values.to_vec();
