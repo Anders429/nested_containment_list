@@ -675,6 +675,17 @@ where
     B: Ord,
     I: Interval<B>,
 {
+    /// Constructs a new, empty `NestedContainmentList`. Equivalent to [`new()`].
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::ops::Range;
+    ///
+    /// let nclist = NestedContainmentList::<usize, Range<usize>>::default();
+    /// ```
+    ///
+    /// [`new()`]: Self::new()
     fn default() -> Self {
         Self::new()
     }
