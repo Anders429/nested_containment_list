@@ -239,6 +239,39 @@ where
     }
 }
 
+/// An [`Iterator`] over elements in a [`NestedContainmentList`] that overlap a query.
+///
+/// This [`Iterator`] is typically created from the [`NestedContainmentList::overlapping()`] method.
+///
+/// Iterates over all elements within the [`NestedContainmentList`] that overlap with the query
+/// interval. These elements are iterated in a nested structure, with all elements contained in
+/// other elements being accessed through those elements' [`sublist()`] methods.
+///
+/// # Example
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+///
+/// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 2..4, 5..7]);
+/// let query = 3..6;
+/// let mut overlapping = nclist.overlapping(&query);
+///
+/// let first_element = overlapping.next().unwrap();
+/// let second_element = overlapping.next().unwrap();
+///
+/// // The outermost elements are accessed directly.
+/// assert_eq!(first_element.value, &(1..5));
+/// assert_eq!(second_element.value, &(5..7));
+///
+/// // Contained elements are accessed through their containing element's sublist.
+/// let mut inner_sublist = first_element.sublist();
+/// let inner_element = inner_sublist.next().unwrap();
+/// assert_eq!(inner_element.value, &(2..4));
+///
+/// // Note that 2..3 is not found within the nested iterators, since 2..3 does not overlap with 3..6.
+/// ```
+///
+/// [`sublist()`]: OverlappingElement::sublist()
+/// [`Iterator`]: core::iter::Iterator
 pub struct Overlapping<'a, B, Q, I>
 where
     B: Ord + 'a,
@@ -258,8 +291,8 @@ where
     fn new(elements: &'a [Element<B, I>], query: &'a Q) -> Self {
         let start_index = match elements.binary_search_by(|element| {
             Ord::cmp(
-                &Interval::end(query),
-                &Interval::end(Borrow::borrow(&element.value)),
+                &Interval::start(query),
+                &Interval::start(Borrow::borrow(&element.value)),
             )
         }) {
             Ok(index) => index,
@@ -283,6 +316,24 @@ where
 {
     type Item = OverlappingElement<'a, B, Q, I>;
 
+    /// Returns the next outer-most element.
+    ///
+    /// Note that any values contained within a returned element must be accessed through the
+    /// element's [`sublist()`] method.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5]);
+    /// let query = 2..3;
+    /// let mut overlapping = nclist.overlapping(&query);
+    ///
+    /// assert_eq!(overlapping.next().unwrap().value, &(1..5));
+    /// assert_eq!(overlapping.next(), None);
+    /// ```
+    /// 
+    /// [`sublist()`]: OverlappingElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(sublist_element) = self.sublist.next() {
             if nestable_overlap(Borrow::borrow(sublist_element.value), self.query) {
@@ -1022,6 +1073,19 @@ mod tests {
 
         let first_element = overlapping.next().unwrap();
         assert_eq!(first_element.value, &(3..4));
+        assert_eq!(first_element.sublist().next(), None);
+        assert_eq!(overlapping.next(), None);
+    }
+
+    #[test]
+    fn overlapping_contained() {
+        let nclist = NestedContainmentList::from_slice(&[1..5]);
+
+        let query = 2..3;
+        let mut overlapping = nclist.overlapping(&query);
+
+        let first_element = overlapping.next().unwrap();
+        assert_eq!(first_element.value, &(1..5));
         assert_eq!(first_element.sublist().next(), None);
         assert_eq!(overlapping.next(), None);
     }
