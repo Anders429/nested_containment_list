@@ -143,6 +143,41 @@ where
     }
 }
 
+/// An [`Iterator`] over all elements in a [`NestedContainmentList`].
+///
+/// This [`Iterator`] is typically created from the [`NestedContainmentList::sublist()`] method.
+///
+/// Iterates over all elements within the [`NestedContainmentList`] in a nested structure, with all
+/// elements contained in other elements being accessed through those elements' [`sublist()`]
+/// methods.
+///
+/// # Example
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+///
+/// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
+/// let mut sublist = nclist.sublist();
+///
+/// let first_element = sublist.next().unwrap();
+/// let second_element = sublist.next().unwrap();
+///
+/// // The outermost elements are accessed directly.
+/// assert_eq!(first_element.value, &(1..5));
+/// assert_eq!(second_element.value, &(5..7));
+///
+/// // Contained elements are accessed through their containing element's sublist.
+/// let mut inner_sublist = first_element.sublist();
+/// let inner_element = inner_sublist.next().unwrap();
+/// assert_eq!(inner_element.value, &(2..4));
+///
+/// // Further nested elements are accessed in further nested iterators.
+/// let mut inner_inner_sublist = inner_element.sublist();
+/// let inner_inner_element = inner_inner_sublist.next().unwrap();
+/// assert_eq!(inner_inner_element.value, &(3..4));
+/// ```
+///
+/// [`sublist()`]: SublistElement::sublist()
+/// [`Iterator`]: core::iter::Iterator
 #[derive(Debug)]
 pub struct Sublist<'a, B, I>
 where
@@ -173,6 +208,23 @@ where
 {
     type Item = SublistElement<'a, B, I>;
 
+    /// Returns the next outer-most element.
+    ///
+    /// Note that any values contained within a returned element must be accessed through the
+    /// element's [`sublist()`] method.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5]);
+    /// let mut sublist = nclist.sublist();
+    ///
+    /// assert_eq!(sublist.next().unwrap().value, &(1..5));
+    /// assert_eq!(sublist.next(), None);
+    /// ```
+    /// 
+    /// [`sublist()`]: SublistElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.elements.len() {
             return None;
