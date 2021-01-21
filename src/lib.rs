@@ -381,26 +381,90 @@ where
     B: Ord,
     I: Interval<B>,
 {
+    /// Construct an empty `NestedContainmentList`.
+    ///
+    /// # Example
+    /// The following example constructs a new `NestedContainmentList` to hold elements of type 
+    /// [`Range<usize>`].
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::ops::Range;
+    ///
+    /// let nclist = NestedContainmentList::<usize, Range<usize>>::new();
+    /// ```
+    ///
+    /// [`Range<usize>`]: core::ops::Range
     pub fn new() -> Self {
         NestedContainmentList {
             elements: Vec::new(),
         }
     }
 
+    /// Construct an empty `NestedContainmentList` with the specified capacity.
+    ///
+    /// The `NestedContainmentList` will be able to hold exactly `capacity` [`Interval`]s without
+    /// reallocating. If `capacity` is `0`, the `NestedContainmentList` will not allocate.
+    ///
+    /// Note that `capacity` is not the same as `len`. `len` is how many elements are actually
+    /// contained, while `capacity` is how many could be contained given the current allocation.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let mut nclist = NestedContainmentList::with_capacity(5);
+    ///
+    /// nclist.insert(1..2);  // Does not reallocate, since capacity is available.
+    /// ```
     pub fn with_capacity(capacity: usize) -> Self {
         NestedContainmentList {
             elements: Vec::with_capacity(capacity),
         }
     }
 
+    /// Returns the number of elements contained in the `NestedContainmentList`, also referred to as
+    /// its 'length'.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let mut nclist = NestedContainmentList::new();
+    /// assert_eq!(nclist.len(), 0);
+    ///
+    /// nclist.insert(1..5);
+    /// assert_eq!(nclist.len(), 1);
+    /// ```
     pub fn len(&self) -> usize {
         self.elements.len()
     }
 
+    /// Returns `true` if the `NestedContainmentList` contains no elements.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let mut nclist = NestedContainmentList::new();
+    /// assert!(nclist.is_empty());
+    ///
+    /// nclist.insert(1..5);
+    /// assert!(!nclist.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.elements.is_empty()
     }
 
+    /// Returns the number of elements the `NestedContainmentList` can hold without reallocating.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::ops::Range;
+    ///
+    /// let nclist = NestedContainmentList::<usize, Range<usize>>::with_capacity(10);
+    /// assert_eq!(nclist.capacity(), 10);
+    /// ```
     pub fn capacity(&self) -> usize {
         self.elements.capacity()
     }
