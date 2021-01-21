@@ -509,6 +509,41 @@ where
         Sublist::new(&self.elements)
     }
 
+    /// Returns an [`Overlapping`] [`Iterator`] over all elements within the
+    /// `NestedContainmentList`.
+    ///
+    /// The [`Overlapping`] is a nested [`Iterator`] over all values contained in the
+    /// `NestedContainmentList` that overlap with the `query` [`Interval`]. All [`Interval`]s
+    /// contained within other [`Interval`]s in the collection that also overlap with the `query`
+    /// are accessed as nested [`Overlapping`]s under their outer-most values.
+    ///
+    /// Iterating using this method is very similar to iterating using the [`sublist()`] method.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 2..4, 5..7]);
+    /// let query = 3..6;
+    /// let mut overlapping = nclist.overlapping(&query);
+    ///
+    /// let first_element = overlapping.next().unwrap();
+    /// let second_element = overlapping.next().unwrap();
+    ///
+    /// // The outermost elements are accessed directly.
+    /// assert_eq!(first_element.value, &(1..5));
+    /// assert_eq!(second_element.value, &(5..7));
+    ///
+    /// // Contained elements are accessed through their containing element's sublist.
+    /// let mut inner_sublist = first_element.sublist();
+    /// let inner_element = inner_sublist.next().unwrap();
+    /// assert_eq!(inner_element.value, &(2..4));
+    ///
+    /// // Note that 2..3 is not found within the nested iterators, since 2..3 does not overlap with 3..6.
+    /// ```
+    ///
+    /// [`sublist()`]: Self::sublist()
+    /// [`Iterator`]: core::iter::Iterator
     pub fn overlapping<'a, Q>(&'a self, query: &'a Q) -> Overlapping<'a, B, Q, I>
     where
         Q: Interval<B>,
