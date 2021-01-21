@@ -482,6 +482,20 @@ where
         Overlapping::new(&self.elements, query)
     }
 
+    /// Insert a new value into the `NestedContainmentList`.
+    ///
+    /// This insertion preserves the internal nested structure of the container, and has temporal
+    /// complexity of *O(log(n))*.
+    ///
+    /// If the `NestedContainmentList`'s `capacity` is not large enough, the `NestedContainmentList`
+    /// will reallocate.
+    ///
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let mut nclist = NestedContainmentList::new();
+    /// nclist.insert(1..2);
+    /// ```
     pub fn insert(&mut self, value: I) {
         // Direct insertion.
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
