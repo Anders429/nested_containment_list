@@ -490,6 +490,7 @@ where
     /// If the `NestedContainmentList`'s `capacity` is not large enough, the `NestedContainmentList`
     /// will reallocate.
     ///
+    /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
     ///
