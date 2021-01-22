@@ -1181,7 +1181,7 @@ mod tests {
 
     #[test]
     fn insert_into_second_sublist() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..4, 5..9]);
+        let mut nclist = NestedContainmentList::from_slice(&[1..4, 2..3, 5..9]);
 
         nclist.insert(6..8);
 
