@@ -1,15 +1,15 @@
 [package]
 name = "nested_containment_list"
 version = "0.1.0"
-edition = "2015"
 authors = ["Anders Evensen"]
+edition = "2015"
 description = "A data structure for efficiently storing and querying nested intervals."
+readme = "README.md"
+repository = "https://github.com/Anders429/nested_containment_list"
 license = "MIT OR Apache-2.0"
 keywords = ["nested", "containment", "list", "interval", "overlapping"]
 categories = ["algorithms", "data-structures", "no-std", "science"]
 build = "build.rs"
-readme = "README.md"
-repository = "https://github.com/Anders429/nested_containment_list"
 exclude = [".travis.yml"]
 
 [build-dependencies]
