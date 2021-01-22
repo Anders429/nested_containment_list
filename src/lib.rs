@@ -1180,6 +1180,20 @@ mod tests {
     }
 
     #[test]
+    fn insert_into_second_sublist() {
+        let mut nclist = NestedContainmentList::from_slice(&[1..4, 5..9]);
+
+        nclist.insert(6..8);
+
+        let mut sublist = nclist.sublist();
+        assert_eq!(sublist.next().unwrap().value, &(1..4));
+        let second_element = sublist.next().unwrap();
+        assert_eq!(second_element.value, &(5..9));
+        assert_eq!(second_element.sublist().next().unwrap().value, &(6..8));
+        assert_eq!(sublist.next(), None);
+    }
+
+    #[test]
     fn remove_from_empty() {
         let mut nclist = NestedContainmentList::<usize, Range<usize>>::new();
 
@@ -1195,7 +1209,7 @@ mod tests {
 
     #[test]
     fn remove_not_found() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5]);
+        let mut nclist = NestedContainmentList::from_slice(&[1..5, 6..7]);
 
         assert!(!nclist.remove(&(1..4)));
     }
@@ -1239,6 +1253,13 @@ mod tests {
         assert_eq!(first_sublist_element_sublist.next().unwrap().value, &(3..4));
         assert_eq!(first_sublist_element_sublist.next(), None);
         assert_eq!(sublist.next(), None);
+    }
+
+    #[test]
+    fn remove_from_second_sublist() {
+        let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 6..7]);
+
+        assert!(nclist.remove(&(6..7)));
     }
 
     #[test]
@@ -1294,6 +1315,16 @@ mod tests {
 
         let inner_overlapping_element = overlapping_element.sublist().next().unwrap();
         assert_eq!(inner_overlapping_element.value, &(2..3));
+    }
+
+    #[test]
+    fn overlapping_stops_early() {
+        let nclist = NestedContainmentList::from_slice(&[1..4, 2..3]);
+        let query = 1..2;
+        let mut overlapping = nclist.overlapping(&query);
+
+        assert_eq!(overlapping.next().unwrap().value, &(1..4));
+        assert_eq!(overlapping.next(), None);
     }
 
     #[test]
