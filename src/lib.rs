@@ -1016,10 +1016,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    #[cfg(rustc_1_36)]
+    #[cfg(not(rust_1_36))]
+    extern crate std as core;
+
     use core::ops::Range;
-    #[cfg(not(rustc_1_36))]
-    use std::ops::Range;
     use NestedContainmentList;
 
     #[test]
