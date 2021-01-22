@@ -1319,7 +1319,7 @@ mod tests {
 
     #[test]
     fn overlapping_stops_early() {
-        let nclist = NestedContainmentList::from_slice(&[1..4, 2..3]);
+        let nclist = NestedContainmentList::from_slice(&[1..4, 2..5]);
         let query = 1..2;
         let mut overlapping = nclist.overlapping(&query);
 
