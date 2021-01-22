@@ -47,38 +47,28 @@ let nclist = NestedContainmentList::new();
 nclist.insert(1..5);
 nclist.insert(2..4);
 nclist.insert(6..7);
+nclist.insert(5..9);
 ```
 
-Data stored within the Nested Containment List structure can be accessed through a nested `Iterator`
-structure obtained by either the `.sublist()` or `.overlapping()` method.
+Data stored within the Nested Containment List is typically accessed through a nested `Iterator`
+structure, obtained by querying using the `.overlapping()` method.
 
 ```rust
-// .sublist() iterates over all stored data through a nested Iterator.
-let mut sublist = nclist.sublist();
+let query = 3..6;
+let mut overlapping = nclist.overlapping(&query);
 
-let first_element = sublist.next().unwrap();
-// The first element will be the first interval.
-assert_eq!(first_element.value, &(1..5));
-// Within the first element's sublist, the next interval, 2..4, which is contained in 1..5, is
-// found.
-assert_eq!(first_element.sublist().next().unwrap().value, &(2..4));
-// 6..7, which is not contained within 1..5, is the next element on the outer-most sublist.
-let second_element = sublist.next().unwrap();
-assert_eq!(second_element.value, &(6..7));
-
-// .overlapping() iterates over only stored data overlapping with the query, again through a nested
-// Iterator.
-let mut overlapping = nclist.overlapping(4..7);
-
+// 1..5 overlaps with 3..6, so it is the first element.
 let first_element = overlapping.next().unwrap();
-// The first element is 1..5, as before.
 assert_eq!(first_element.value, &(1..5));
-// But the first element doesn't contain next interval, 2..4, because it doesn't overlap with the
-// query, 5..7.
-assert_eq!(first_element.sublist().next(), None);
-// 6..7 also overlaps with the query, so it is contained in the overlapping iterator.
+// 2..4 is contained inside 1..5 and overlaps with 3..6, so it is accessed through the first
+// element's sublist.
+assert_eq!(first_element.sublist().next().unwrap().value, &(2..4));
+// 5..9 overlaps with 3..6, so it is the second element.
 let second_element = overlapping.next().unwrap();
-assert_eq!(second_element.value, &(6..7));
+assert_eq!(second_element.value, &(5..9));
+// Even though 6..7 is contained inside 5..9, it does not overlap with 3..6, and therefore is not
+// contained in the second element's sublist.
+assert!(second_element.sublist().next().is_none())
 ```
 
 ## Performance
