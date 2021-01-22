@@ -52,8 +52,9 @@ nclist.insert(6..7);
 nclist.insert(5..9);
 ```
 
-Data stored within the Nested Containment List is typically accessed through a nested `Iterator`
-structure, obtained by querying using the
+Data stored within the Nested Containment List is typically accessed through a nested
+[`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) structure, obtained by querying
+using the
 [`.overlapping()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.overlapping)
 method.
 

@@ -1,3 +1,91 @@
+//! Implementation of a Nested Containment List.
+//!
+//! A Nested Containment List is a data structure for storing types that implement the [`Interval`]
+//! trait. Elements stored in a [`NestedContainmentList`] are stored in a nested structure to allow
+//! for easy querying using `Interval` queries.
+//!
+//! # Example Usage
+//! Given that `Interval` is implemented on [`Range`], the following examples will store and query
+//! on `Range`s.
+//!
+//! ## Construction
+//!
+//! Construction of [`NestedContainmentList`]s can be done using either the [`new()`] or
+//! [`from_slice()`] methods. Construction from `from_slice()` has temporal complexity
+//! *O(n log(n))*, where *n* is the length of the slice.
+//!
+//! ```
+//! use nested_containment_list::NestedContainmentList;
+//! use std::ops::Range;
+//!
+//! let nclist = NestedContainmentList::<usize, Range<usize>>::new();
+//! ```
+//!
+//! ```
+//! use nested_containment_list::NestedContainmentList;
+//!
+//! let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
+//! ```
+//!
+//! ## Mutation
+//!
+//! A [`NestedContainmentList`] allows for insertion and removal of [`Interval`] types. Both of
+//! these methods have a temporal complexity of *O(log(n))*, where *n* is the number of `Interval`s
+//! stored in the data structure.
+//!
+//! ```
+//! use nested_containment_list::NestedContainmentList;
+//!
+//! let mut nclist = NestedContainmentList::new();
+//!
+//! nclist.insert(1..5);
+//! nclist.remove(&(1..5));
+//! ```
+//!
+//! ## Iteration
+//!
+//! Iterating over a [`NestedContainmentList`] is done in a nested manner. [`Iterator`]s obtained
+//! from the [`sublist()`] and [`overlapping()`] methods iterate directly over the relevant top-most
+//! sublist, with intervals contained within the top-most elements being accessed through nested
+//! sublists.
+//!
+//! For example, iterating using [`sublist()`] can be done as follows:
+//!
+//! ```
+//! use nested_containment_list::NestedContainmentList;
+//!
+//! let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 6..7]);
+//! let mut sublist = nclist.sublist();
+//!
+//! // The first element in the top-most sublist, 1..5.
+//! let first_element = sublist.next().unwrap();
+//! assert_eq!(first_element.value, &(1..5));
+//!
+//! // Contained inside the element's sublist is the interval 2..4.
+//! assert_eq!(first_element.sublist().next().unwrap().value, &(2..4));
+//!
+//! // The next element in the top-most sublist is 6..7, so it is obtained like the first element.
+//! let second_element = sublist.next().unwrap();
+//! assert_eq!(second_element.value, &(6..7));
+//! ```
+//!
+//! To remove a single level of nesting, one may use the [`Iterator::flatten()`] method.
+//!
+//! # no_std
+//! This crate is usable in
+//! [`no_std`](https://doc.rust-lang.org/1.7.0/book/using-rust-without-the-standard-library.html)
+//! environments when compiled on stable `rustc 1.36.0` or higher. The version limitation is due to
+//! the use of [`alloc`](https://doc.rust-lang.org/alloc/index.html), allowing for heap allocation
+//! without use of [`std`](https://doc.rust-lang.org/std/).
+//!
+//! [`from_slice()`]: NestedContainmentList::from_slice()
+//! [`new()`]: NestedContainmentList::new()
+//! [`overlapping()`]: NestedContainmentList::overlapping()
+//! [`sublist()`]: NestedContainmentList::sublist()
+//! [`Iterator`]: core::iter::Iterator
+//! [`Iterator::flatten()`]: core::iter::Iterator::flatten()
+//! [`Range`]: core::ops::Range
+
 #![cfg_attr(rustc_1_36, no_std)]
 
 #[cfg(rustc_1_36)]
