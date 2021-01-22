@@ -78,8 +78,8 @@ assert!(second_element.sublist().next().is_none())
 ## Performance
 
 ### Construction
-Construction from a slice using
-[`NestedContainmentList::from_slice()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.from_slice)
+Construction of a
+[`NestedContainmentList`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html)
 has temporal complexity *O(n log(n))*. Insertion using
 [`NestedContainmentList::insert()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.insert)
 has temporal complexity *O(log n)*. Similarly, removal using
