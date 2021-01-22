@@ -18,7 +18,8 @@ implementation provided here allows storage and querying of generic types using 
 ## Usage
 
 To allow a type to be stored and used with Nested Containment Lists, it must implement the
-`Interval` trait.
+[`Interval`](https://docs.rs/nested_containment_list/*/nested_containment_list/trait.Interval.html)
+trait.
 
 ```rust
 use nested_containment_list::Interval;
@@ -36,8 +37,9 @@ impl Interval<usize> for MyStruct {
 
 The type can then be stored within a Nested Containment List.
 
-Note that the `Interval` trait is already implemented for `Range`. A `Range` can therefore be used
-in Nested Containment Lists like so:
+Note that the `Interval` trait is already implemented for
+[`Range`](https://doc.rust-lang.org/std/ops/struct.Range.html). A `Range` can
+therefore be used in Nested Containment Lists, like so:
 
 ```rust
 use nested_containment_list::NestedContainmentList;
@@ -51,7 +53,9 @@ nclist.insert(5..9);
 ```
 
 Data stored within the Nested Containment List is typically accessed through a nested `Iterator`
-structure, obtained by querying using the `.overlapping()` method.
+structure, obtained by querying using the
+[`.overlapping()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.overlapping)
+method.
 
 ```rust
 let query = 3..6;
@@ -74,18 +78,25 @@ assert!(second_element.sublist().next().is_none())
 ## Performance
 
 ### Construction
-Construction from a slice using `NestedContainmentList::from_slice()` has temporal complexity
-*O(n log(n))*. Insertion using `NestedContainmentList::insert()` has temporal complexity *O(log n)*.
-Similarly, removal using `NestedContainmentList::remove()` also has temporal complexity *O(log n)*.
+Construction from a slice using
+[`NestedContainmentList::from_slice()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.from_slice)
+has temporal complexity *O(n log(n))*. Insertion using
+[`NestedContainmentList::insert()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.insert)
+has temporal complexity *O(log n)*. Similarly, removal using
+[`NestedContainmentList::remove()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.remove)
+also has temporal complexity *O(log n)*.
 
 ### Querying
-Querying for overlapping intervals with `NestedContainmentList::overlapping()` has temporal
-complexity *O(n + log(N))*, where *N* is the number of intervals stored within the Nested Containment
-List, and *n* is the number of intervals overlapping with the query.
+Querying for overlapping intervals with
+[`NestedContainmentList::overlapping()`](https://docs.rs/nested_containment_list/*/nested_containment_list/struct.NestedContainmentList.html#method.overlapping)
+has temporal complexity *O(n + log(N))*, where *N* is the number of intervals stored within the
+Nested Containment List, and *n* is the number of intervals overlapping with the query.
 
 ## Minimum Supported Rust Version
-This crate is guaranteed to compile on stable `rustc 1.0.0` and up. Use in a `no_std` environment
-requires stable `rustc 1.36.0` and up, due to the use of `alloc`.
+This crate is guaranteed to compile on stable `rustc 1.0.0` and up. Use in a
+[`no_std`](https://doc.rust-lang.org/1.7.0/book/using-rust-without-the-standard-library.html)
+environment requires stable `rustc 1.36.0` and up, due to the use of
+[`alloc`](https://doc.rust-lang.org/alloc/index.html).
 
 ## License
 This project is licensed under either of
