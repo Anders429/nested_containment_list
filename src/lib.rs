@@ -1039,6 +1039,17 @@ mod tests {
     }
 
     #[test]
+    fn len() {
+        let mut nclist = NestedContainmentList::new();
+
+        assert_eq!(nclist.len(), 0);
+
+        nclist.insert(1..5);
+
+        assert_eq!(nclist.len(), 1);
+    }
+
+    #[test]
     fn is_empty() {
         assert!(NestedContainmentList::<usize, Range<usize>>::new().is_empty());
     }
@@ -1046,6 +1057,13 @@ mod tests {
     #[test]
     fn is_not_empty() {
         assert!(!NestedContainmentList::from_slice(&[1..2]).is_empty());
+    }
+
+    #[test]
+    fn capacity() {
+        let nclist = NestedContainmentList::<usize, Range<usize>>::with_capacity(10);
+
+        assert_eq!(nclist.capacity(), 10);
     }
 
     #[test]
