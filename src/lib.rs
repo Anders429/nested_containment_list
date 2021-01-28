@@ -978,7 +978,7 @@ where
                 Ordering::Less => {
                     break;
                 }
-                _ => {}
+                Ordering::Greater => {}
             }
 
             let element = &self.elements[index];
