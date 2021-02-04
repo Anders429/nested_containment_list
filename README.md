@@ -1,6 +1,6 @@
 # nested_containment_list
 
-[![travis-ci.org](https://img.shields.io/travis/Anders429/nested_containment_list)](https://travis-ci.org/github/Anders429/nested_containment_list)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Anders429/nested_containment_list/Tests)](https://github.com/Anders429/nested_containment_list/actions)
 [![codecov.io](https://img.shields.io/codecov/c/gh/Anders429/nested_containment_list)](https://codecov.io/gh/Anders429/nested_containment_list)
 [![crates.io](https://img.shields.io/crates/v/nested_containment_list)](https://crates.io/crates/nested_containment_list)
 [![docs.rs](https://docs.rs/nested_containment_list/badge.svg)](https://docs.rs/nested_containment_list)

@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["nested", "containment", "list", "interval", "overlapping"]
 categories = ["algorithms", "data-structures", "no-std", "science"]
 build = "build.rs"
-exclude = [".travis.yml"]
+exclude = [".github/*"]
 
 [build-dependencies]
 autocfg = "1.0.1"
