@@ -13,3 +13,6 @@ exclude = [".travis.yml"]
 
 [build-dependencies]
 autocfg = "1.0.1"
+
+[dev-dependencies]
+claim = "0.5.0"

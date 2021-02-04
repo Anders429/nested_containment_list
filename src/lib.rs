@@ -95,6 +95,10 @@ extern crate std as alloc;
 #[cfg(not(rustc_1_36))]
 extern crate std as core;
 
+#[cfg(test)]
+#[macro_use]
+extern crate claim;
+
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
@@ -1115,7 +1119,7 @@ mod tests {
         let nclist = NestedContainmentList::<usize, Range<usize>>::new();
 
         // Check that the sublist is empty.
-        assert!(nclist.sublist().next().is_none());
+        assert_none!(nclist.sublist().next());
     }
 
     #[test]
@@ -1123,7 +1127,7 @@ mod tests {
         let nclist = NestedContainmentList::<usize, Range<usize>>::default();
 
         // Check that the sublist is empty.
-        assert!(nclist.sublist().next().is_none());
+        assert_none!(nclist.sublist().next());
     }
 
     #[test]
@@ -1162,7 +1166,7 @@ mod tests {
 
         let mut sublist = nclist.sublist();
         assert_eq!(sublist.next().unwrap().value, &(1..5));
-        assert!(sublist.next().is_none());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1177,8 +1181,8 @@ mod tests {
         assert_eq!(sublist_first_element.value, &(1..5));
         let mut sublist_first_element_sublist = sublist_first_element.sublist();
         assert_eq!(sublist_first_element_sublist.next().unwrap().value, &(2..4));
-        assert!(sublist_first_element_sublist.next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(sublist_first_element_sublist.next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1193,8 +1197,8 @@ mod tests {
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
         assert_eq!(first_sublist_element_sublist.next().unwrap().value, &(2..4));
-        assert!(first_sublist_element_sublist.next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(first_sublist_element_sublist.next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1210,9 +1214,9 @@ mod tests {
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
         assert_eq!(first_sublist_element_sublist.next().unwrap().value, &(2..4));
-        assert!(first_sublist_element_sublist.next().is_none());
+        assert_none!(first_sublist_element_sublist.next());
         assert_eq!(sublist.next().unwrap().value, &(6..10));
-        assert!(sublist.next().is_none());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1234,8 +1238,8 @@ mod tests {
             second_sublist_element_sublist.next().unwrap().value,
             &(3..4)
         );
-        assert!(first_sublist_element_sublist.next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(first_sublist_element_sublist.next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1250,8 +1254,8 @@ mod tests {
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
         assert_eq!(first_sublist_element_sublist.next().unwrap().value, &(1..5));
-        assert!(first_sublist_element_sublist.next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(first_sublist_element_sublist.next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1264,7 +1268,7 @@ mod tests {
         let mut sublist = nclist.sublist();
         assert_eq!(sublist.next().unwrap().value, &(1..5));
         assert_eq!(sublist.next().unwrap().value, &(6..10));
-        assert!(sublist.next().is_none());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1278,7 +1282,7 @@ mod tests {
         let second_element = sublist.next().unwrap();
         assert_eq!(second_element.value, &(5..9));
         assert_eq!(second_element.sublist().next().unwrap().value, &(6..8));
-        assert!(sublist.next().is_none());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1311,8 +1315,8 @@ mod tests {
         let mut sublist = nclist.sublist();
         let first_element = sublist.next().unwrap();
         assert_eq!(first_element.value, &(1..5));
-        assert!(first_element.sublist().next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(first_element.sublist().next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1324,8 +1328,8 @@ mod tests {
         let mut sublist = nclist.sublist();
         let first_element = sublist.next().unwrap();
         assert_eq!(first_element.value, &(1..5));
-        assert!(first_element.sublist().next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(first_element.sublist().next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1339,8 +1343,8 @@ mod tests {
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
         assert_eq!(first_sublist_element_sublist.next().unwrap().value, &(3..4));
-        assert!(first_sublist_element_sublist.next().is_none());
-        assert!(sublist.next().is_none());
+        assert_none!(first_sublist_element_sublist.next());
+        assert_none!(sublist.next());
     }
 
     #[test]
@@ -1359,11 +1363,11 @@ mod tests {
 
         let first_element = overlapping.next().unwrap();
         assert_eq!(first_element.value, &(1..5));
-        assert!(first_element.sublist().next().is_none());
+        assert_none!(first_element.sublist().next());
         let second_element = overlapping.next().unwrap();
         assert_eq!(second_element.value, &(6..7));
-        assert!(second_element.sublist().next().is_none());
-        assert!(overlapping.next().is_none());
+        assert_none!(second_element.sublist().next());
+        assert_none!(overlapping.next());
     }
 
     #[test]
@@ -1375,8 +1379,8 @@ mod tests {
 
         let first_element = overlapping.next().unwrap();
         assert_eq!(first_element.value, &(3..4));
-        assert!(first_element.sublist().next().is_none());
-        assert!(overlapping.next().is_none());
+        assert_none!(first_element.sublist().next());
+        assert_none!(overlapping.next());
     }
 
     #[test]
@@ -1388,8 +1392,8 @@ mod tests {
 
         let first_element = overlapping.next().unwrap();
         assert_eq!(first_element.value, &(1..5));
-        assert!(first_element.sublist().next().is_none());
-        assert!(overlapping.next().is_none());
+        assert_none!(first_element.sublist().next());
+        assert_none!(overlapping.next());
     }
 
     #[test]
@@ -1412,7 +1416,7 @@ mod tests {
         let mut overlapping = nclist.overlapping(&query);
 
         assert_eq!(overlapping.next().unwrap().value, &(1..4));
-        assert!(overlapping.next().is_none());
+        assert_none!(overlapping.next());
     }
 
     #[test]
@@ -1430,8 +1434,8 @@ mod tests {
             second_sublist_element_sublist.next().unwrap().value,
             &(3..4)
         );
-        assert!(first_sublist_element_sublist.next().is_none());
+        assert_none!(first_sublist_element_sublist.next());
         assert_eq!(sublist.next().unwrap().value, &(6..7));
-        assert!(sublist.next().is_none());
+        assert_none!(sublist.next());
     }
 }
