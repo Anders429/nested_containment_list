@@ -159,7 +159,10 @@ where
 #[cfg(test)]
 mod tests {
     use claim::assert_matches;
-    use core::{cmp::Ordering::{Equal, Greater, Less}, ops::RangeFull};
+    use core::{
+        cmp::Ordering::{Equal, Greater, Less},
+        ops::RangeFull,
+    };
     use nestable::Nestable;
 
     #[test]
