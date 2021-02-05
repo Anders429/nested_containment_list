@@ -1,5 +1,5 @@
 use core::{
-    cmp::Ordering,
+    cmp::Ordering::{self, Equal, Greater, Less},
     ops::{
         Bound::{Excluded, Included, Unbounded},
         RangeBounds,
@@ -63,44 +63,44 @@ where
             Included(self_start) => match other.start_bound() {
                 Included(other_start) => {
                     if self_start < other_start {
-                        Ordering::Less
+                        Less
                     } else if self_start == other_start {
                         self.end_bound_ordering(other)
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
                 Excluded(other_start) => {
                     if self_start <= other_start {
-                        Ordering::Less
+                        Less
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
-                Unbounded => Ordering::Greater,
+                Unbounded => Greater,
             },
             Excluded(self_start) => match other.start_bound() {
                 Included(other_start) => {
                     if self_start < other_start {
-                        Ordering::Less
+                        Less
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
                 Excluded(other_start) => {
                     if self_start < other_start {
-                        Ordering::Less
+                        Less
                     } else if self_start == other_start {
                         self.end_bound_ordering(other)
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
-                Unbounded => Ordering::Greater,
+                Unbounded => Greater,
             },
             Unbounded => match other.start_bound() {
-                Unbounded => Ordering::Equal,
-                _ => Ordering::Less,
+                Unbounded => Equal,
+                _ => Less,
             },
         }
     }
@@ -114,44 +114,44 @@ where
             Included(self_end) => match other.end_bound() {
                 Included(other_end) => {
                     if self_end > other_end {
-                        Ordering::Less
+                        Less
                     } else if self_end == other_end {
-                        Ordering::Equal
+                        Equal
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
                 Excluded(other_end) => {
                     if self_end >= other_end {
-                        Ordering::Less
+                        Less
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
-                Unbounded => Ordering::Less,
+                Unbounded => Less,
             },
             Excluded(self_end) => match other.end_bound() {
                 Included(other_end) => {
                     if self_end > other_end {
-                        Ordering::Less
+                        Less
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
                 Excluded(other_end) => {
                     if self_end > other_end {
-                        Ordering::Less
+                        Less
                     } else if self_end == other_end {
-                        Ordering::Equal
+                        Equal
                     } else {
-                        Ordering::Greater
+                        Greater
                     }
                 }
-                Unbounded => Ordering::Less,
+                Unbounded => Less,
             },
             Unbounded => match other.end_bound() {
-                Unbounded => Ordering::Equal,
-                _ => Ordering::Greater,
+                Unbounded => Equal,
+                _ => Greater,
             },
         }
     }
