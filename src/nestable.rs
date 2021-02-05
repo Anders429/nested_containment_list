@@ -156,3 +156,113 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core::ops::RangeFull;
+    use nestable::Nestable;
+
+    #[test]
+    fn range_full_contains() {
+        assert!(Nestable::<RangeFull, usize>::contains(&(..), &(..)));
+        assert!((..).contains(&(1..)));
+        assert!((..).contains(&(..1)));
+        assert!((..).contains(&(..=1)));
+        assert!((..).contains(&(0..1)));
+        assert!((..).contains(&(0..=1)));
+    }
+
+    #[test]
+    fn range_from_contains() {
+        assert!(!Nestable::contains(&(1..), &(..)));
+        assert!(Nestable::contains(&(1..), &(2..)));
+        assert!(!Nestable::contains(&(1..), &(0..)));
+        assert!(!Nestable::contains(&(1..), &(..2)));
+        assert!(!Nestable::contains(&(1..), &(..=2)));
+        assert!(Nestable::contains(&(1..), &(2..3)));
+        assert!(!Nestable::contains(&(1..), &(0..3)));
+        assert!(Nestable::contains(&(1..), &(2..=3)));
+        assert!(!Nestable::contains(&(1..), &(0..=3)));
+    }
+
+    #[test]
+    fn range_to_contains() {
+        assert!(!Nestable::contains(&(..2), &(..)));
+        assert!(!Nestable::contains(&(..2), &(1..)));
+        assert!(Nestable::contains(&(..2), &(..1)));
+        assert!(!Nestable::contains(&(..2), &(..3)));
+        assert!(Nestable::contains(&(..2), &(..=1)));
+        assert!(!Nestable::contains(&(..2), &(..=2)));
+        assert!(!Nestable::contains(&(..2), &(..=3)));
+        assert!(Nestable::contains(&(..2), &(0..1)));
+        assert!(Nestable::contains(&(..2), &(0..2)));
+        assert!(!Nestable::contains(&(..2), &(0..3)));
+        assert!(!Nestable::contains(&(..2), &(2..3)));
+        assert!(Nestable::contains(&(..2), &(2..2)));
+        assert!(Nestable::contains(&(..2), &(0..=1)));
+        assert!(!Nestable::contains(&(..2), &(0..=2)));
+        assert!(!Nestable::contains(&(..2), &(0..=3)));
+        assert!(!Nestable::contains(&(..2), &(2..=3)));
+        assert!(!Nestable::contains(&(..2), &(2..=2)));
+    }
+
+    #[test]
+    fn range_to_inclusive_contains() {
+        assert!(!Nestable::contains(&(..=2), &(..)));
+        assert!(!Nestable::contains(&(..=2), &(1..)));
+        assert!(Nestable::contains(&(..=2), &(..1)));
+        assert!(Nestable::contains(&(..=2), &(..2)));
+        assert!(!Nestable::contains(&(..=2), &(..3)));
+        assert!(Nestable::contains(&(..=2), &(..=1)));
+        assert!(Nestable::contains(&(..=2), &(..=2)));
+        assert!(!Nestable::contains(&(..=2), &(..=3)));
+        assert!(Nestable::contains(&(..=2), &(0..1)));
+        assert!(Nestable::contains(&(..=2), &(0..2)));
+        assert!(!Nestable::contains(&(..=2), &(0..3)));
+        assert!(Nestable::contains(&(..=2), &(2..2)));
+        assert!(Nestable::contains(&(..=2), &(0..=1)));
+        assert!(Nestable::contains(&(..=2), &(0..=2)));
+        assert!(!Nestable::contains(&(..=2), &(0..=3)));
+        assert!(Nestable::contains(&(..=2), &(2..=2)));
+    }
+
+    #[test]
+    fn range_contains() {
+        assert!(!Nestable::contains(&(1..4), &(..)));
+        assert!(!Nestable::contains(&(1..4), &(2..)));
+        assert!(!Nestable::contains(&(1..4), &(..3)));
+        assert!(!Nestable::contains(&(1..4), &(..=3)));
+        assert!(Nestable::contains(&(1..4), &(2..3)));
+        assert!(!Nestable::contains(&(1..4), &(2..5)));
+        assert!(!Nestable::contains(&(1..4), &(0..3)));
+        assert!(!Nestable::contains(&(1..4), &(5..6)));
+        assert!(Nestable::contains(&(1..4), &(2..4)));
+        assert!(Nestable::contains(&(1..4), &(1..3)));
+        assert!(Nestable::contains(&(1..4), &(2..=3)));
+        assert!(!Nestable::contains(&(1..4), &(2..=5)));
+        assert!(!Nestable::contains(&(1..4), &(0..=3)));
+        assert!(!Nestable::contains(&(1..4), &(5..=6)));
+        assert!(!Nestable::contains(&(1..4), &(2..=4)));
+        assert!(Nestable::contains(&(1..4), &(1..=3)));
+    }
+
+    #[test]
+    fn range_inclusive_contains() {
+        assert!(!Nestable::contains(&(1..=4), &(..)));
+        assert!(!Nestable::contains(&(1..=4), &(2..)));
+        assert!(!Nestable::contains(&(1..=4), &(..3)));
+        assert!(!Nestable::contains(&(1..=4), &(..=3)));
+        assert!(Nestable::contains(&(1..=4), &(2..3)));
+        assert!(!Nestable::contains(&(1..=4), &(2..5)));
+        assert!(!Nestable::contains(&(1..=4), &(0..3)));
+        assert!(!Nestable::contains(&(1..=4), &(5..6)));
+        assert!(Nestable::contains(&(1..=4), &(2..4)));
+        assert!(Nestable::contains(&(1..=4), &(1..3)));
+        assert!(Nestable::contains(&(1..=4), &(2..=3)));
+        assert!(!Nestable::contains(&(1..=4), &(2..=5)));
+        assert!(!Nestable::contains(&(1..=4), &(0..=3)));
+        assert!(!Nestable::contains(&(1..=4), &(5..=6)));
+        assert!(Nestable::contains(&(1..=4), &(2..=4)));
+        assert!(Nestable::contains(&(1..=4), &(1..=3)));
+    }
+}
