@@ -1,6 +1,9 @@
 use core::{
     cmp::Ordering,
-    ops::{Bound, RangeBounds},
+    ops::{
+        Bound::{Excluded, Included, Unbounded},
+        RangeBounds,
+    },
 };
 
 pub(crate) trait Nestable<R, T>
@@ -28,29 +31,27 @@ where
         S: RangeBounds<T>,
     {
         (match self.start_bound() {
-            Bound::Included(outer_start) => match inner.start_bound() {
-                Bound::Included(inner_start) | Bound::Excluded(inner_start) => {
-                    outer_start <= inner_start
-                }
-                Bound::Unbounded => false,
+            Included(outer_start) => match inner.start_bound() {
+                Included(inner_start) | Excluded(inner_start) => outer_start <= inner_start,
+                Unbounded => false,
             },
-            Bound::Excluded(outer_start) => match inner.start_bound() {
-                Bound::Included(inner_start) => outer_start < inner_start,
-                Bound::Excluded(inner_start) => outer_start <= inner_start,
-                Bound::Unbounded => false,
+            Excluded(outer_start) => match inner.start_bound() {
+                Included(inner_start) => outer_start < inner_start,
+                Excluded(inner_start) => outer_start <= inner_start,
+                Unbounded => false,
             },
-            Bound::Unbounded => true,
+            Unbounded => true,
         }) && (match self.end_bound() {
-            Bound::Included(outer_end) => match inner.end_bound() {
-                Bound::Included(inner_end) | Bound::Excluded(inner_end) => outer_end >= inner_end,
-                Bound::Unbounded => false,
+            Included(outer_end) => match inner.end_bound() {
+                Included(inner_end) | Excluded(inner_end) => outer_end >= inner_end,
+                Unbounded => false,
             },
-            Bound::Excluded(outer_end) => match inner.end_bound() {
-                Bound::Included(inner_end) => outer_end > inner_end,
-                Bound::Excluded(inner_end) => outer_end >= inner_end,
-                Bound::Unbounded => false,
+            Excluded(outer_end) => match inner.end_bound() {
+                Included(inner_end) => outer_end > inner_end,
+                Excluded(inner_end) => outer_end >= inner_end,
+                Unbounded => false,
             },
-            Bound::Unbounded => true,
+            Unbounded => true,
         })
     }
 
@@ -59,8 +60,8 @@ where
         S: RangeBounds<T>,
     {
         match self.start_bound() {
-            Bound::Included(self_start) => match other.start_bound() {
-                Bound::Included(other_start) => {
+            Included(self_start) => match other.start_bound() {
+                Included(other_start) => {
                     if self_start < other_start {
                         Ordering::Less
                     } else if self_start == other_start {
@@ -69,24 +70,24 @@ where
                         Ordering::Greater
                     }
                 }
-                Bound::Excluded(other_start) => {
+                Excluded(other_start) => {
                     if self_start <= other_start {
                         Ordering::Less
                     } else {
                         Ordering::Greater
                     }
                 }
-                Bound::Unbounded => Ordering::Greater,
+                Unbounded => Ordering::Greater,
             },
-            Bound::Excluded(self_start) => match other.start_bound() {
-                Bound::Included(other_start) => {
+            Excluded(self_start) => match other.start_bound() {
+                Included(other_start) => {
                     if self_start < other_start {
                         Ordering::Less
                     } else {
                         Ordering::Greater
                     }
                 }
-                Bound::Excluded(other_start) => {
+                Excluded(other_start) => {
                     if self_start < other_start {
                         Ordering::Less
                     } else if self_start == other_start {
@@ -95,10 +96,10 @@ where
                         Ordering::Greater
                     }
                 }
-                Bound::Unbounded => Ordering::Greater,
+                Unbounded => Ordering::Greater,
             },
-            Bound::Unbounded => match other.start_bound() {
-                Bound::Unbounded => Ordering::Equal,
+            Unbounded => match other.start_bound() {
+                Unbounded => Ordering::Equal,
                 _ => Ordering::Less,
             },
         }
@@ -110,8 +111,8 @@ where
         S: RangeBounds<T>,
     {
         match self.end_bound() {
-            Bound::Included(self_end) => match other.end_bound() {
-                Bound::Included(other_end) => {
+            Included(self_end) => match other.end_bound() {
+                Included(other_end) => {
                     if self_end > other_end {
                         Ordering::Less
                     } else if self_end == other_end {
@@ -120,24 +121,24 @@ where
                         Ordering::Greater
                     }
                 }
-                Bound::Excluded(other_end) => {
+                Excluded(other_end) => {
                     if self_end >= other_end {
                         Ordering::Less
                     } else {
                         Ordering::Greater
                     }
                 }
-                Bound::Unbounded => Ordering::Less,
+                Unbounded => Ordering::Less,
             },
-            Bound::Excluded(self_end) => match other.end_bound() {
-                Bound::Included(other_end) => {
+            Excluded(self_end) => match other.end_bound() {
+                Included(other_end) => {
                     if self_end > other_end {
                         Ordering::Less
                     } else {
                         Ordering::Greater
                     }
                 }
-                Bound::Excluded(other_end) => {
+                Excluded(other_end) => {
                     if self_end > other_end {
                         Ordering::Less
                     } else if self_end == other_end {
@@ -146,10 +147,10 @@ where
                         Ordering::Greater
                     }
                 }
-                Bound::Unbounded => Ordering::Less,
+                Unbounded => Ordering::Less,
             },
-            Bound::Unbounded => match other.end_bound() {
-                Bound::Unbounded => Ordering::Equal,
+            Unbounded => match other.end_bound() {
+                Unbounded => Ordering::Equal,
                 _ => Ordering::Greater,
             },
         }
