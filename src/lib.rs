@@ -105,9 +105,44 @@ use core::cmp::Ordering;
 use core::iter::Chain;
 use core::iter::Iterator;
 use core::marker::PhantomData;
+use core::ops::Bound;
+use core::ops::RangeBounds;
 use core::option;
 
 mod impls;
+
+fn contains_nested<R, S, T>(outer: &R, inner: &S) -> bool
+where
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: PartialOrd<T>,
+{
+    (match outer.start_bound() {
+        Bound::Included(outer_start) => match inner.start_bound() {
+            Bound::Included(inner_start) | Bound::Excluded(inner_start) => {
+                outer_start <= inner_start
+            }
+            Bound::Unbounded => false,
+        },
+        Bound::Excluded(outer_start) => match inner.start_bound() {
+            Bound::Included(inner_start) => outer_start < inner_start,
+            Bound::Excluded(inner_start) => outer_start <= inner_start,
+            Bound::Unbounded => false,
+        },
+        Bound::Unbounded => true,
+    }) && (match outer.end_bound() {
+        Bound::Included(outer_end) => match inner.end_bound() {
+            Bound::Included(inner_end) | Bound::Excluded(inner_end) => outer_end >= inner_end,
+            Bound::Unbounded => false,
+        },
+        Bound::Excluded(outer_end) => match inner.end_bound() {
+            Bound::Included(inner_end) => outer_end > inner_end,
+            Bound::Excluded(inner_end) => outer_end >= inner_end,
+            Bound::Unbounded => false,
+        },
+        Bound::Unbounded => true,
+    })
+}
 
 /// Trait for values that are intervals.
 ///
