@@ -6,6 +6,59 @@ use core::{
     },
 };
 
+#[inline]
+fn end_bound_ordering<R, S, T>(this: &R, other: &S) -> Ordering
+where
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: PartialOrd<T>,
+{
+    match this.end_bound() {
+        Included(this_end) => match other.end_bound() {
+            Included(other_end) => {
+                if this_end > other_end {
+                    Less
+                } else if this_end == other_end {
+                    Equal
+                } else {
+                    Greater
+                }
+            }
+            Excluded(other_end) => {
+                if this_end >= other_end {
+                    Less
+                } else {
+                    Greater
+                }
+            }
+            Unbounded => Less,
+        },
+        Excluded(this_end) => match other.end_bound() {
+            Included(other_end) => {
+                if this_end > other_end {
+                    Less
+                } else {
+                    Greater
+                }
+            }
+            Excluded(other_end) => {
+                if this_end > other_end {
+                    Less
+                } else if this_end == other_end {
+                    Equal
+                } else {
+                    Greater
+                }
+            }
+            Unbounded => Less,
+        },
+        Unbounded => match other.end_bound() {
+            Unbounded => Equal,
+            _ => Greater,
+        },
+    }
+}
+
 pub(crate) trait Nestable<R, T>
 where
     R: RangeBounds<T>,
@@ -65,7 +118,7 @@ where
                     if self_start < other_start {
                         Less
                     } else if self_start == other_start {
-                        self.end_bound_ordering(other)
+                        end_bound_ordering(self, other)
                     } else {
                         Greater
                     }
@@ -91,7 +144,7 @@ where
                     if self_start < other_start {
                         Less
                     } else if self_start == other_start {
-                        self.end_bound_ordering(other)
+                        end_bound_ordering(self, other)
                     } else {
                         Greater
                     }
@@ -101,57 +154,6 @@ where
             Unbounded => match other.start_bound() {
                 Unbounded => Equal,
                 _ => Less,
-            },
-        }
-    }
-
-    #[inline]
-    fn end_bound_ordering<S>(&self, other: &S) -> Ordering
-    where
-        S: RangeBounds<T>,
-    {
-        match self.end_bound() {
-            Included(self_end) => match other.end_bound() {
-                Included(other_end) => {
-                    if self_end > other_end {
-                        Less
-                    } else if self_end == other_end {
-                        Equal
-                    } else {
-                        Greater
-                    }
-                }
-                Excluded(other_end) => {
-                    if self_end >= other_end {
-                        Less
-                    } else {
-                        Greater
-                    }
-                }
-                Unbounded => Less,
-            },
-            Excluded(self_end) => match other.end_bound() {
-                Included(other_end) => {
-                    if self_end > other_end {
-                        Less
-                    } else {
-                        Greater
-                    }
-                }
-                Excluded(other_end) => {
-                    if self_end > other_end {
-                        Less
-                    } else if self_end == other_end {
-                        Equal
-                    } else {
-                        Greater
-                    }
-                }
-                Unbounded => Less,
-            },
-            Unbounded => match other.end_bound() {
-                Unbounded => Equal,
-                _ => Greater,
             },
         }
     }
