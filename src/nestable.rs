@@ -31,7 +31,7 @@ where
                     Greater
                 }
             }
-            Unbounded => Less,
+            Unbounded => Greater,
         },
         Excluded(this_end) => match other.end_bound() {
             Included(other_end) => {
@@ -50,11 +50,11 @@ where
                     Greater
                 }
             }
-            Unbounded => Less,
+            Unbounded => Greater,
         },
         Unbounded => match other.end_bound() {
             Unbounded => Equal,
-            _ => Greater,
+            _ => Less,
         },
     }
 }
@@ -67,9 +67,6 @@ where
     where
         S: RangeBounds<T>;
     fn ordering<S>(&self, other: &S) -> Ordering
-    where
-        S: RangeBounds<T>;
-    fn end_bound_ordering<S>(&self, other: &S) -> Ordering
     where
         S: RangeBounds<T>;
 }
@@ -152,7 +149,7 @@ where
                 Unbounded => Greater,
             },
             Unbounded => match other.start_bound() {
-                Unbounded => Equal,
+                Unbounded => end_bound_ordering(self, other),
                 _ => Less,
             },
         }
@@ -161,7 +158,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::ops::RangeFull;
+    use claim::assert_matches;
+    use core::{cmp::Ordering::{Equal, Greater, Less}, ops::RangeFull};
     use nestable::Nestable;
 
     #[test]
@@ -266,5 +264,103 @@ mod tests {
         assert!(!Nestable::contains(&(1..=4), &(5..=6)));
         assert!(Nestable::contains(&(1..=4), &(2..=4)));
         assert!(Nestable::contains(&(1..=4), &(1..=3)));
+    }
+
+    #[test]
+    fn range_full_ordering() {
+        assert_matches!(Nestable::<RangeFull, usize>::ordering(&(..), &(..)), Equal);
+        assert_matches!((..).ordering(&(1..)), Less);
+        assert_matches!((..).ordering(&(..1)), Less);
+        assert_matches!((..).ordering(&(..=1)), Less);
+        assert_matches!((..).ordering(&(1..2)), Less);
+        assert_matches!((..).ordering(&(1..=2)), Less);
+    }
+
+    #[test]
+    fn range_from_ordering() {
+        assert_matches!((1..).ordering(&(..)), Greater);
+        assert_matches!((1..).ordering(&(0..)), Greater);
+        assert_matches!((1..).ordering(&(1..)), Equal);
+        assert_matches!((1..).ordering(&(2..)), Less);
+        assert_matches!((1..).ordering(&(..2)), Greater);
+        assert_matches!((1..).ordering(&(..=2)), Greater);
+        assert_matches!((1..).ordering(&(0..2)), Greater);
+        assert_matches!((1..).ordering(&(1..2)), Less);
+        assert_matches!((1..).ordering(&(2..3)), Less);
+        assert_matches!((1..).ordering(&(0..=2)), Greater);
+        assert_matches!((1..).ordering(&(1..=2)), Less);
+        assert_matches!((1..).ordering(&(2..=3)), Less);
+    }
+
+    #[test]
+    fn range_to_ordering() {
+        assert_matches!((..2).ordering(&(..)), Greater);
+        assert_matches!((..2).ordering(&(1..)), Less);
+        assert_matches!((..2).ordering(&(..1)), Less);
+        assert_matches!((..2).ordering(&(..2)), Equal);
+        assert_matches!((..2).ordering(&(..3)), Greater);
+        assert_matches!((..2).ordering(&(..=1)), Less);
+        assert_matches!((..2).ordering(&(..=2)), Greater);
+        assert_matches!((..2).ordering(&(..=3)), Greater);
+        assert_matches!((..2).ordering(&(0..1)), Less);
+        assert_matches!((..2).ordering(&(0..=1)), Less);
+    }
+
+    #[test]
+    fn range_to_inclusive_ordering() {
+        assert_matches!((..=2).ordering(&(..)), Greater);
+        assert_matches!((..=2).ordering(&(1..)), Less);
+        assert_matches!((..=2).ordering(&(..1)), Less);
+        assert_matches!((..=2).ordering(&(..2)), Less);
+        assert_matches!((..=2).ordering(&(..3)), Greater);
+        assert_matches!((..=2).ordering(&(..=1)), Less);
+        assert_matches!((..=2).ordering(&(..=2)), Equal);
+        assert_matches!((..=2).ordering(&(..=3)), Greater);
+        assert_matches!((..=2).ordering(&(0..1)), Less);
+        assert_matches!((..=2).ordering(&(0..=1)), Less);
+    }
+
+    #[test]
+    fn range_ordering() {
+        assert_matches!((1..4).ordering(&(..)), Greater);
+        assert_matches!((1..4).ordering(&(0..)), Greater);
+        assert_matches!((1..4).ordering(&(1..)), Greater);
+        assert_matches!((1..4).ordering(&(2..)), Less);
+        assert_matches!((1..4).ordering(&(..2)), Greater);
+        assert_matches!((1..4).ordering(&(..=2)), Greater);
+        assert_matches!((1..4).ordering(&(0..2)), Greater);
+        assert_matches!((1..4).ordering(&(0..5)), Greater);
+        assert_matches!((1..4).ordering(&(1..5)), Greater);
+        assert_matches!((1..4).ordering(&(1..4)), Equal);
+        assert_matches!((1..4).ordering(&(1..3)), Less);
+        assert_matches!((1..4).ordering(&(2..5)), Less);
+        assert_matches!((1..4).ordering(&(0..=2)), Greater);
+        assert_matches!((1..4).ordering(&(0..=5)), Greater);
+        assert_matches!((1..4).ordering(&(1..=5)), Greater);
+        assert_matches!((1..4).ordering(&(1..=4)), Greater);
+        assert_matches!((1..4).ordering(&(1..=3)), Less);
+        assert_matches!((1..4).ordering(&(2..=5)), Less);
+    }
+
+    #[test]
+    fn range_inclusive_ordering() {
+        assert_matches!((1..=4).ordering(&(..)), Greater);
+        assert_matches!((1..=4).ordering(&(0..)), Greater);
+        assert_matches!((1..=4).ordering(&(1..)), Greater);
+        assert_matches!((1..=4).ordering(&(2..)), Less);
+        assert_matches!((1..=4).ordering(&(..2)), Greater);
+        assert_matches!((1..=4).ordering(&(..=2)), Greater);
+        assert_matches!((1..=4).ordering(&(0..2)), Greater);
+        assert_matches!((1..=4).ordering(&(0..5)), Greater);
+        assert_matches!((1..=4).ordering(&(1..5)), Greater);
+        assert_matches!((1..=4).ordering(&(1..4)), Less);
+        assert_matches!((1..=4).ordering(&(1..3)), Less);
+        assert_matches!((1..=4).ordering(&(2..5)), Less);
+        assert_matches!((1..=4).ordering(&(0..=2)), Greater);
+        assert_matches!((1..=4).ordering(&(0..=5)), Greater);
+        assert_matches!((1..=4).ordering(&(1..=5)), Greater);
+        assert_matches!((1..=4).ordering(&(1..=4)), Equal);
+        assert_matches!((1..=4).ordering(&(1..=3)), Less);
+        assert_matches!((1..=4).ordering(&(2..=5)), Less);
     }
 }
