@@ -111,7 +111,7 @@ use core::option;
 
 mod impls;
 
-trait NestedContainment<R, T>
+trait Nestable<R, T>
 where
     R: RangeBounds<T>,
 {
@@ -126,7 +126,7 @@ where
         S: RangeBounds<T>;
 }
 
-impl<R, T> NestedContainment<R, T> for R
+impl<R, T> Nestable<R, T> for R
 where
     R: RangeBounds<T>,
     T: PartialOrd<T>,
