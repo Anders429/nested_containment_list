@@ -1,3 +1,14 @@
+/// Defines a `Nestable` trait for types that are usable within a `NestedContainmentList`.
+///
+/// A type that is `Nestable` has two methods provided: `contains()` and `ordering()`. All types
+/// that implement `RangeBounds<T>` where `T` is `PartialOrd<T>` implicitly implement `Nestable`.
+///
+/// A `Nestable` value is "contained" (via `contains()`) inside another `Nestable` value if its
+/// bounds can be exactly contained inside the other value. This takes into account all variants of
+/// bounds.
+///
+/// An ordering is also defined on `Nestable` types, using `ordering()`. This is defined by first
+/// comparing on the `start_bound()`, and then, if the values are equal, comparing on `end_bound()`.
 use core::{
     cmp::Ordering::{self, Equal, Greater, Less},
     ops::{
