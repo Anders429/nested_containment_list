@@ -29,21 +29,13 @@ where
 {
     match this.end_bound() {
         Included(this_end) => match other.end_bound() {
-            Included(other_end) => {
-                other_end.cmp(this_end)
-            }
-            Excluded(other_end) => {
-                other_end.cmp(this_end).then(Less)
-            }
+            Included(other_end) => other_end.cmp(this_end),
+            Excluded(other_end) => other_end.cmp(this_end).then(Less),
             Unbounded => Greater,
         },
         Excluded(this_end) => match other.end_bound() {
-            Included(other_end) => {
-                other_end.cmp(this_end).then(Greater)
-            }
-            Excluded(other_end) => {
-                other_end.cmp(this_end)
-            }
+            Included(other_end) => other_end.cmp(this_end).then(Greater),
+            Excluded(other_end) => other_end.cmp(this_end),
             Unbounded => Greater,
         },
         Unbounded => match other.end_bound() {
@@ -86,29 +78,21 @@ where
     where
         S: RangeBounds<T>,
     {
-        (match self.start_bound() {
-            Included(outer_start) => match inner.start_bound() {
-                Included(inner_start) | Excluded(inner_start) => outer_start <= inner_start,
-                Unbounded => false,
-            },
-            Excluded(outer_start) => match inner.start_bound() {
-                Included(inner_start) => outer_start < inner_start,
-                Excluded(inner_start) => outer_start <= inner_start,
-                Unbounded => false,
-            },
-            Unbounded => true,
-        }) && (match self.end_bound() {
-            Included(outer_end) => match inner.end_bound() {
-                Included(inner_end) | Excluded(inner_end) => outer_end >= inner_end,
-                Unbounded => false,
-            },
-            Excluded(outer_end) => match inner.end_bound() {
-                Included(inner_end) => outer_end > inner_end,
-                Excluded(inner_end) => outer_end >= inner_end,
-                Unbounded => false,
-            },
-            Unbounded => true,
-        })
+        (match (self.start_bound(), inner.start_bound()) {
+            (Included(outer_start), Included(inner_start))
+            | (Included(outer_start), Excluded(inner_start))
+            | (Excluded(outer_start), Excluded(inner_start)) => outer_start <= inner_start,
+            (Excluded(outer_start), Included(inner_start)) => outer_start < inner_start,
+            (Unbounded, _) => true,
+            (_, Unbounded) => false,
+        }) && match (self.end_bound(), inner.end_bound()) {
+            (Included(outer_start), Included(inner_start))
+            | (Included(outer_start), Excluded(inner_start))
+            | (Excluded(outer_start), Excluded(inner_start)) => outer_start >= inner_start,
+            (Excluded(outer_start), Included(inner_start)) => outer_start > inner_start,
+            (Unbounded, _) => true,
+            (_, Unbounded) => false,
+        }
     }
 
     fn ordering<S>(&self, other: &S) -> Ordering
@@ -117,21 +101,17 @@ where
     {
         match self.start_bound() {
             Included(self_start) => match other.start_bound() {
-                Included(other_start) => {
-                    self_start.cmp(other_start).then_with(|| end_bound_ordering(self, other))
-                }
-                Excluded(other_start) => {
-                    self_start.cmp(other_start).then(Less)
-                }
+                Included(other_start) => self_start
+                    .cmp(other_start)
+                    .then_with(|| end_bound_ordering(self, other)),
+                Excluded(other_start) => self_start.cmp(other_start).then(Less),
                 Unbounded => Greater,
             },
             Excluded(self_start) => match other.start_bound() {
-                Included(other_start) => {
-                    self_start.cmp(other_start).then(Greater)
-                }
-                Excluded(other_start) => {
-                    self_start.cmp(other_start).then_with(|| end_bound_ordering(self, other))
-                }
+                Included(other_start) => self_start.cmp(other_start).then(Greater),
+                Excluded(other_start) => self_start
+                    .cmp(other_start)
+                    .then_with(|| end_bound_ordering(self, other)),
                 Unbounded => Greater,
             },
             Unbounded => match other.start_bound() {
