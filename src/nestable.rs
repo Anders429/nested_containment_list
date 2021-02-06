@@ -17,6 +17,9 @@ use core::{
     },
 };
 
+/// Internal function for ordering on `end_bound()`s.
+///
+/// The ordering is done in reverse. See documentation for `Nestable::ordering()` for more.
 #[inline]
 fn end_bound_ordering<R, S, T>(this: &R, other: &S) -> Ordering
 where
@@ -50,18 +53,30 @@ where
     }
 }
 
+/// A trait for types which are nestable.
+///
+/// This trait is automatically implemented on all types which implement `RangeBounds<T>` over a
+/// totally orderable `T`.
 pub(crate) trait Nestable<R, T>
 where
     R: RangeBounds<T>,
 {
+    /// `R` is said to "contain" `S` if `R::start_bound()` is less than or equal to
+    /// `S::start_bound()` and `R::end_bound()` is greater than or equal to `S::end_bound()`.
     fn contains<S>(&self, inner: &S) -> bool
     where
         S: RangeBounds<T>;
+    /// Ordering is calculated by comparing `start_bound()`. In the event of equality, ordering is
+    /// then calculated by comparing `end_bound()` in reverse.
+    ///
+    /// This ordering guarantees that ranges will be immediately followed by each of their contained
+    /// ranges.
     fn ordering<S>(&self, other: &S) -> Ordering
     where
         S: RangeBounds<T>;
 }
 
+/// Implementation on all types that implement `RangeBounds<T>` over a totally orderable `T`.
 impl<R, T> Nestable<R, T> for R
 where
     R: RangeBounds<T>,
