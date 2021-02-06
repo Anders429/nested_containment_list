@@ -1,7 +1,7 @@
 /// Defines a `Nestable` trait for types that are usable within a `NestedContainmentList`.
 ///
 /// A type that is `Nestable` has two methods provided: `contains()` and `ordering()`. All types
-/// that implement `RangeBounds<T>` where `T` is `PartialOrd<T>` implicitly implement `Nestable`.
+/// that implement `RangeBounds<T>` where `T` is `Ord` implicitly implement `Nestable`.
 ///
 /// A `Nestable` value is "contained" (via `contains()`) inside another `Nestable` value if its
 /// bounds can be exactly contained inside the other value. This takes into account all variants of
@@ -27,39 +27,19 @@ where
     match this.end_bound() {
         Included(this_end) => match other.end_bound() {
             Included(other_end) => {
-                if this_end > other_end {
-                    Less
-                } else if this_end == other_end {
-                    Equal
-                } else {
-                    Greater
-                }
+                other_end.cmp(this_end)
             }
             Excluded(other_end) => {
-                if this_end >= other_end {
-                    Less
-                } else {
-                    Greater
-                }
+                other_end.cmp(this_end).then(Less)
             }
             Unbounded => Greater,
         },
         Excluded(this_end) => match other.end_bound() {
             Included(other_end) => {
-                if this_end > other_end {
-                    Less
-                } else {
-                    Greater
-                }
+                other_end.cmp(this_end).then(Greater)
             }
             Excluded(other_end) => {
-                if this_end > other_end {
-                    Less
-                } else if this_end == other_end {
-                    Equal
-                } else {
-                    Greater
-                }
+                other_end.cmp(this_end)
             }
             Unbounded => Greater,
         },
@@ -123,39 +103,19 @@ where
         match self.start_bound() {
             Included(self_start) => match other.start_bound() {
                 Included(other_start) => {
-                    if self_start < other_start {
-                        Less
-                    } else if self_start == other_start {
-                        end_bound_ordering(self, other)
-                    } else {
-                        Greater
-                    }
+                    self_start.cmp(other_start).then_with(|| end_bound_ordering(self, other))
                 }
                 Excluded(other_start) => {
-                    if self_start <= other_start {
-                        Less
-                    } else {
-                        Greater
-                    }
+                    self_start.cmp(other_start).then(Less)
                 }
                 Unbounded => Greater,
             },
             Excluded(self_start) => match other.start_bound() {
                 Included(other_start) => {
-                    if self_start < other_start {
-                        Less
-                    } else {
-                        Greater
-                    }
+                    self_start.cmp(other_start).then(Greater)
                 }
                 Excluded(other_start) => {
-                    if self_start < other_start {
-                        Less
-                    } else if self_start == other_start {
-                        end_bound_ordering(self, other)
-                    } else {
-                        Greater
-                    }
+                    self_start.cmp(other_start).then_with(|| end_bound_ordering(self, other))
                 }
                 Unbounded => Greater,
             },
