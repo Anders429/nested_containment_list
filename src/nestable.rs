@@ -22,7 +22,7 @@ fn end_bound_ordering<R, S, T>(this: &R, other: &S) -> Ordering
 where
     R: RangeBounds<T>,
     S: RangeBounds<T>,
-    T: PartialOrd<T>,
+    T: Ord,
 {
     match this.end_bound() {
         Included(this_end) => match other.end_bound() {
@@ -85,7 +85,7 @@ where
 impl<R, T> Nestable<R, T> for R
 where
     R: RangeBounds<T>,
-    T: PartialOrd<T>,
+    T: Ord,
 {
     fn contains<S>(&self, inner: &S) -> bool
     where
