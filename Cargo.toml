@@ -16,3 +16,4 @@ autocfg = "1.0.1"
 
 [dev-dependencies]
 claim = "0.5.0"
+more_ranges = "0.1.0"

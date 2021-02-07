@@ -115,6 +115,9 @@ mod tests {
         cmp::Ordering::{Equal, Greater, Less},
         ops::RangeFull,
     };
+    use more_ranges::{
+        RangeFromExclusive, RangeFromExclusiveToExclusive, RangeFromExclusiveToInclusive,
+    };
     use nestable::Nestable;
 
     #[test]
@@ -125,6 +128,9 @@ mod tests {
         assert!((..).contains(&(..=1)));
         assert!((..).contains(&(0..1)));
         assert!((..).contains(&(0..=1)));
+        assert!((..).contains(&RangeFromExclusive { start: 1 }));
+        assert!((..).contains(&RangeFromExclusiveToExclusive { start: 1, end: 4 }));
+        assert!((..).contains(&RangeFromExclusiveToInclusive { start: 1, end: 4 }));
     }
 
     #[test]
@@ -138,6 +144,44 @@ mod tests {
         assert!(!Nestable::contains(&(1..), &(0..3)));
         assert!(Nestable::contains(&(1..), &(2..=3)));
         assert!(!Nestable::contains(&(1..), &(0..=3)));
+        assert!(!Nestable::contains(
+            &(1..),
+            &RangeFromExclusive { start: 0 }
+        ));
+        assert!(Nestable::contains(&(1..), &RangeFromExclusive { start: 1 }));
+        assert!(Nestable::contains(&(1..), &RangeFromExclusive { start: 2 }));
+        assert!(!Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToExclusive { start: 0, end: 1 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToExclusive { start: 0, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToExclusive { start: 2, end: 4 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToInclusive { start: 0, end: 1 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToInclusive { start: 0, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..),
+            &RangeFromExclusiveToInclusive { start: 2, end: 4 }
+        ));
     }
 
     #[test]
@@ -159,6 +203,34 @@ mod tests {
         assert!(!Nestable::contains(&(..2), &(0..=3)));
         assert!(!Nestable::contains(&(..2), &(2..=3)));
         assert!(!Nestable::contains(&(..2), &(2..=2)));
+        assert!(!Nestable::contains(
+            &(..2),
+            &RangeFromExclusive { start: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(..2),
+            &RangeFromExclusiveToExclusive { start: 0, end: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(..2),
+            &RangeFromExclusiveToExclusive { start: 0, end: 2 }
+        ));
+        assert!(!Nestable::contains(
+            &(..2),
+            &RangeFromExclusiveToExclusive { start: 0, end: 3 }
+        ));
+        assert!(Nestable::contains(
+            &(..2),
+            &RangeFromExclusiveToInclusive { start: 0, end: 1 }
+        ));
+        assert!(!Nestable::contains(
+            &(..2),
+            &RangeFromExclusiveToInclusive { start: 0, end: 2 }
+        ));
+        assert!(!Nestable::contains(
+            &(..2),
+            &RangeFromExclusiveToInclusive { start: 0, end: 3 }
+        ));
     }
 
     #[test]
@@ -179,6 +251,34 @@ mod tests {
         assert!(Nestable::contains(&(..=2), &(0..=2)));
         assert!(!Nestable::contains(&(..=2), &(0..=3)));
         assert!(Nestable::contains(&(..=2), &(2..=2)));
+        assert!(!Nestable::contains(
+            &(..=2),
+            &RangeFromExclusive { start: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(..=2),
+            &RangeFromExclusiveToExclusive { start: 0, end: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(..=2),
+            &RangeFromExclusiveToExclusive { start: 0, end: 2 }
+        ));
+        assert!(!Nestable::contains(
+            &(..=2),
+            &RangeFromExclusiveToExclusive { start: 0, end: 3 }
+        ));
+        assert!(Nestable::contains(
+            &(..=2),
+            &RangeFromExclusiveToInclusive { start: 0, end: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(..=2),
+            &RangeFromExclusiveToInclusive { start: 0, end: 2 }
+        ));
+        assert!(!Nestable::contains(
+            &(..=2),
+            &RangeFromExclusiveToInclusive { start: 0, end: 3 }
+        ));
     }
 
     #[test]
@@ -199,6 +299,58 @@ mod tests {
         assert!(!Nestable::contains(&(1..4), &(5..=6)));
         assert!(!Nestable::contains(&(1..4), &(2..=4)));
         assert!(Nestable::contains(&(1..4), &(1..=3)));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusive { start: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToExclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToExclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToExclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToExclusive { start: 5, end: 6 }
+        ));
+        assert!(Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToExclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToExclusive { start: 1, end: 3 }
+        ));
+        assert!(Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToInclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToInclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToInclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToInclusive { start: 5, end: 6 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToInclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..4),
+            &RangeFromExclusiveToInclusive { start: 1, end: 3 }
+        ));
     }
 
     #[test]
@@ -219,6 +371,368 @@ mod tests {
         assert!(!Nestable::contains(&(1..=4), &(5..=6)));
         assert!(Nestable::contains(&(1..=4), &(2..=4)));
         assert!(Nestable::contains(&(1..=4), &(1..=3)));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusive { start: 1 }
+        ));
+        assert!(Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToExclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToExclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToExclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToExclusive { start: 5, end: 6 }
+        ));
+        assert!(Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToExclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToExclusive { start: 1, end: 3 }
+        ));
+        assert!(Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToInclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToInclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToInclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToInclusive { start: 5, end: 6 }
+        ));
+        assert!(Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToInclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &(1..=4),
+            &RangeFromExclusiveToInclusive { start: 1, end: 3 }
+        ));
+    }
+
+    #[test]
+    fn range_from_exclusive_contains() {
+        assert!(!Nestable::contains(&RangeFromExclusive { start: 1 }, &(..)));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(0..)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(1..)
+        ));
+        assert!(Nestable::contains(&RangeFromExclusive { start: 1 }, &(2..)));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(..2)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(..=2)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(0..4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(1..4)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(2..4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(0..=4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(1..=4)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &(2..=4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &RangeFromExclusiveToExclusive { start: 0, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 4 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &RangeFromExclusiveToInclusive { start: 0, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusive { start: 1 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 4 }
+        ));
+    }
+
+    #[test]
+    fn range_from_exclusive_to_exclusive_contains() {
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(..)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(..3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(..=3)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..5)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(0..3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(5..6)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(1..3)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..=3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..=5)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(0..=3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(5..=6)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(2..=4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &(1..=3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusive { start: 2 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 5, end: 6 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 1, end: 3 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 5, end: 6 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToExclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 1, end: 3 }
+        ));
+    }
+
+    #[test]
+    fn range_from_exclusive_to_inclusive_contains() {
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(..)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(..3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(..=3)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..5)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(0..3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(5..6)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(1..3)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..=3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..=5)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(0..=3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(5..=6)
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(2..=4)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &(1..=3)
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusive { start: 2 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 5, end: 6 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToExclusive { start: 1, end: 3 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 5 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 0, end: 3 }
+        ));
+        assert!(!Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 5, end: 6 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 2, end: 4 }
+        ));
+        assert!(Nestable::contains(
+            &RangeFromExclusiveToInclusive { start: 1, end: 4 },
+            &RangeFromExclusiveToInclusive { start: 1, end: 3 }
+        ));
     }
 
     #[test]
@@ -229,6 +743,15 @@ mod tests {
         assert_matches!((..).ordering(&(..=1)), Less);
         assert_matches!((..).ordering(&(1..2)), Less);
         assert_matches!((..).ordering(&(1..=2)), Less);
+        assert_matches!((..).ordering(&RangeFromExclusive { start: 1 }), Less);
+        assert_matches!(
+            (..).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 2 }),
+            Less
+        );
+        assert_matches!(
+            (..).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 2 }),
+            Less
+        );
     }
 
     #[test]
@@ -245,6 +768,33 @@ mod tests {
         assert_matches!((1..).ordering(&(0..=2)), Greater);
         assert_matches!((1..).ordering(&(1..=2)), Less);
         assert_matches!((1..).ordering(&(2..=3)), Less);
+        assert_matches!((1..).ordering(&RangeFromExclusive { start: 0 }), Greater);
+        assert_matches!((1..).ordering(&RangeFromExclusive { start: 1 }), Less);
+        assert_matches!((1..).ordering(&RangeFromExclusive { start: 2 }), Less);
+        assert_matches!(
+            (1..).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 3 }),
+            Greater
+        );
+        assert_matches!(
+            (1..).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..).ordering(&RangeFromExclusiveToExclusive { start: 2, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 3 }),
+            Greater
+        );
+        assert_matches!(
+            (1..).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..).ordering(&RangeFromExclusiveToInclusive { start: 2, end: 3 }),
+            Less
+        );
     }
 
     #[test]
@@ -259,6 +809,15 @@ mod tests {
         assert_matches!((..2).ordering(&(..=3)), Greater);
         assert_matches!((..2).ordering(&(0..1)), Less);
         assert_matches!((..2).ordering(&(0..=1)), Less);
+        assert_matches!((..2).ordering(&RangeFromExclusive { start: 1 }), Less);
+        assert_matches!(
+            (..2).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 1 }),
+            Less
+        );
+        assert_matches!(
+            (..2).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 1 }),
+            Less
+        );
     }
 
     #[test]
@@ -273,6 +832,15 @@ mod tests {
         assert_matches!((..=2).ordering(&(..=3)), Greater);
         assert_matches!((..=2).ordering(&(0..1)), Less);
         assert_matches!((..=2).ordering(&(0..=1)), Less);
+        assert_matches!((..=2).ordering(&RangeFromExclusive { start: 1 }), Less);
+        assert_matches!(
+            (..=2).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 1 }),
+            Less
+        );
+        assert_matches!(
+            (..=2).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 1 }),
+            Less
+        );
     }
 
     #[test]
@@ -295,6 +863,57 @@ mod tests {
         assert_matches!((1..4).ordering(&(1..=4)), Greater);
         assert_matches!((1..4).ordering(&(1..=3)), Less);
         assert_matches!((1..4).ordering(&(2..=5)), Less);
+        assert_matches!((1..4).ordering(&RangeFromExclusive { start: 0 }), Greater);
+        assert_matches!((1..4).ordering(&RangeFromExclusive { start: 1 }), Less);
+        assert_matches!((1..4).ordering(&RangeFromExclusive { start: 2 }), Less);
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 4 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToExclusive { start: 2, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 4 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..4).ordering(&RangeFromExclusiveToInclusive { start: 2, end: 5 }),
+            Less
+        );
     }
 
     #[test]
@@ -317,5 +936,416 @@ mod tests {
         assert_matches!((1..=4).ordering(&(1..=4)), Equal);
         assert_matches!((1..=4).ordering(&(1..=3)), Less);
         assert_matches!((1..=4).ordering(&(2..=5)), Less);
+        assert_matches!((1..=4).ordering(&RangeFromExclusive { start: 0 }), Greater);
+        assert_matches!((1..=4).ordering(&RangeFromExclusive { start: 1 }), Less);
+        assert_matches!((1..=4).ordering(&RangeFromExclusive { start: 2 }), Less);
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToExclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 4 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToExclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToExclusive { start: 2, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToInclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 4 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToInclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            (1..=4).ordering(&RangeFromExclusiveToInclusive { start: 2, end: 5 }),
+            Less
+        );
+    }
+
+    #[test]
+    fn range_from_exclusive_ordering() {
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(..)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(0..)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(1..)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(2..)), Less);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(..2)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(..=2)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(0..2)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(1..2)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(2..3)), Less);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(0..=2)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(1..=2)), Greater);
+        assert_matches!(RangeFromExclusive { start: 1 }.ordering(&(2..=3)), Less);
+        assert_matches!(
+            RangeFromExclusive { start: 1 }.ordering(&RangeFromExclusive { start: 0 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }.ordering(&RangeFromExclusive { start: 1 }),
+            Equal
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }.ordering(&RangeFromExclusive { start: 2 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 0, end: 3 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 2, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 0, end: 3 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusive { start: 1 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 2, end: 3 }),
+            Less
+        );
+    }
+
+    #[test]
+    fn range_from_exclusive_to_exclusive_ordering() {
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(..)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(0..)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(2..)),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(..2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(..=2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(0..2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(0..5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..4)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..3)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(2..5)),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(0..=2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(0..=5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..=5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..=4)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(1..=3)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }.ordering(&(2..=5)),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusive { start: 0 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusive { start: 1 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusive { start: 2 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 4 }),
+            Equal
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 2, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 4 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToExclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 2, end: 5 }),
+            Less
+        );
+    }
+
+    #[test]
+    fn range_from_exclusive_to_inclusive_ordering() {
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(..)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(0..)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(2..)),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(..2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(..=2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(0..2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(0..5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..4)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..3)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(2..5)),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(0..=2)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(0..=5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..=5)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..=4)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(1..=3)),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }.ordering(&(2..=5)),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusive { start: 0 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusive { start: 1 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusive { start: 2 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 4 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToExclusive { start: 2, end: 5 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 0, end: 2 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 0, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 5 }),
+            Greater
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 4 }),
+            Equal
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 1, end: 3 }),
+            Less
+        );
+        assert_matches!(
+            RangeFromExclusiveToInclusive { start: 1, end: 4 }
+                .ordering(&RangeFromExclusiveToInclusive { start: 2, end: 5 }),
+            Less
+        );
     }
 }

@@ -98,6 +98,8 @@ extern crate std as core;
 #[cfg(test)]
 #[macro_use]
 extern crate claim;
+#[cfg(test)]
+extern crate more_ranges;
 
 mod impls;
 mod nestable;
