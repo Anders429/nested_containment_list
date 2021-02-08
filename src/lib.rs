@@ -18,7 +18,7 @@
 //! use nested_containment_list::NestedContainmentList;
 //! use std::ops::Range;
 //!
-//! let nclist = NestedContainmentList::<usize, Range<usize>>::new();
+//! let nclist = NestedContainmentList::<Range<usize>, usize>::new();
 //! ```
 //!
 //! ```
@@ -110,7 +110,9 @@ use core::cmp::Ordering;
 use core::iter::Chain;
 use core::iter::Iterator;
 use core::marker::PhantomData;
+use core::ops::RangeBounds;
 use core::option;
+use nestable::Nestable;
 
 /// Trait for values that are intervals.
 ///
@@ -188,14 +190,14 @@ where
 }
 
 #[derive(Debug)]
-struct Element<B, I>
+struct Element<R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
-    value: I,
+    value: R,
     sublist_len: usize,
-    _marker: PhantomData<B>,
+    _marker: PhantomData<T>,
 }
 
 /// An element contained within a [`Sublist`].
@@ -218,10 +220,10 @@ where
 /// assert_eq!(inner_sublist_element.value, &(2..3));
 /// ```
 #[derive(Debug)]
-pub struct SublistElement<'a, B, I>
+pub struct SublistElement<'a, R, T>
 where
-    B: Ord + 'a,
-    I: Interval<B> + 'a,
+    R: RangeBounds<T> + 'a,
+    T: Ord + 'a,
 {
     /// The element's contained [`Interval`].
     ///
@@ -234,15 +236,15 @@ where
     ///
     /// let sublist_element = sublist.next().unwrap();
     /// assert_eq!(sublist_element.value, &(1..2));
-    pub value: &'a I,
-    sublist_elements: &'a [Element<B, I>],
-    _marker: PhantomData<B>,
+    pub value: &'a R,
+    sublist_elements: &'a [Element<R, T>],
+    _marker: PhantomData<T>,
 }
 
-impl<'a, B, I> SublistElement<'a, B, I>
+impl<'a, R, T> SublistElement<'a, R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
     /// Return a [`Sublist`] [`Iterator`] over this element's contained sublist.
     ///
@@ -262,18 +264,18 @@ where
     /// ```
     ///
     /// [`Iterator`]: core::iter::Iterator
-    pub fn sublist(&self) -> Sublist<'a, B, I> {
+    pub fn sublist(&self) -> Sublist<'a, R, T> {
         Sublist::new(self.sublist_elements)
     }
 }
 
-impl<'a, B, I> IntoIterator for SublistElement<'a, B, I>
+impl<'a, R, T> IntoIterator for SublistElement<'a, R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
     type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Sublist<'a, B, I>>;
+    type IntoIter = Chain<option::IntoIter<Self::Item>, Sublist<'a, R, T>>;
 
     /// Convert the element into an iterator, first returning the element's `value`, then each of
     /// the topmost elements in the element's sublist.
@@ -341,21 +343,21 @@ where
 /// [`sublist()`]: SublistElement::sublist()
 /// [`Iterator`]: core::iter::Iterator
 #[derive(Debug)]
-pub struct Sublist<'a, B, I>
+pub struct Sublist<'a, R, T>
 where
-    B: Ord + 'a,
-    I: Interval<B> + 'a,
+    R: RangeBounds<T> + 'a,
+    T: Ord + 'a,
 {
     index: usize,
-    elements: &'a [Element<B, I>],
+    elements: &'a [Element<R, T>],
 }
 
-impl<'a, B, I> Sublist<'a, B, I>
+impl<'a, R, T> Sublist<'a, R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
-    fn new(elements: &'a [Element<B, I>]) -> Self {
+    fn new(elements: &'a [Element<R, T>]) -> Self {
         Sublist {
             index: 0,
             elements: elements,
@@ -363,12 +365,12 @@ where
     }
 }
 
-impl<'a, B, I> Iterator for Sublist<'a, B, I>
+impl<'a, R, T> Iterator for Sublist<'a, R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
-    type Item = SublistElement<'a, B, I>;
+    type Item = SublistElement<'a, R, T>;
 
     /// Returns the next outer-most element.
     ///
@@ -430,23 +432,23 @@ where
 /// assert_eq!(inner_overlapping_element.value, &(2..3));
 /// ```
 #[derive(Debug)]
-pub struct OverlappingElement<'a, B, Q, I>
+pub struct OverlappingElement<'a, R, S, T>
 where
-    B: Ord + 'a,
-    Q: Interval<B> + 'a,
-    I: Interval<B> + Borrow<Q> + 'a,
+    R: RangeBounds<T> + 'a,
+    S: RangeBounds<T> + 'a,
+    T: Ord + 'a,
 {
-    pub value: &'a I,
-    sublist_elements: &'a [Element<B, I>],
-    query: &'a Q,
-    _marker: PhantomData<B>,
+    pub value: &'a R,
+    sublist_elements: &'a [Element<R, T>],
+    query: &'a S,
+    _marker: PhantomData<T>,
 }
 
-impl<'a, B, Q, I> OverlappingElement<'a, B, Q, I>
+impl<'a, R, S, T> OverlappingElement<'a, R, S, T>
 where
-    B: Ord,
-    Q: Interval<B>,
-    I: Interval<B> + Borrow<Q>,
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
 {
     /// Return an [`Overlapping`] [`Iterator`] over this element's contained sublist.
     ///
@@ -467,19 +469,19 @@ where
     /// ```
     ///
     /// [`Iterator`]: core::iter::Iterator
-    pub fn sublist(&self) -> Overlapping<'a, B, Q, I> {
+    pub fn sublist(&self) -> Overlapping<'a, R, S, T> {
         Overlapping::new(self.sublist_elements, self.query)
     }
 }
 
-impl<'a, B, Q, I> IntoIterator for OverlappingElement<'a, B, Q, I>
+impl<'a, R, S, T> IntoIterator for OverlappingElement<'a, R, S, T>
 where
-    B: Ord,
-    Q: Interval<B>,
-    I: Interval<B> + Borrow<Q>,
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
 {
     type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Overlapping<'a, B, Q, I>>;
+    type IntoIter = Chain<option::IntoIter<Self::Item>, Overlapping<'a, R, S, T>>;
 
     /// Returns the next outer-most element that overlaps the query `Q`.
     ///
@@ -544,28 +546,26 @@ where
 ///
 /// [`sublist()`]: OverlappingElement::sublist()
 /// [`Iterator`]: core::iter::Iterator
-pub struct Overlapping<'a, B, Q, I>
+pub struct Overlapping<'a, R, S, T>
 where
-    B: Ord + 'a,
-    Q: Interval<B> + 'a,
-    I: Interval<B> + Borrow<Q> + 'a,
+    R: RangeBounds<T> + 'a,
+    S: RangeBounds<T> + 'a,
+    T: Ord + 'a,
 {
-    sublist: Sublist<'a, B, I>,
-    query: &'a Q,
+    sublist: Sublist<'a, R, T>,
+    query: &'a S,
 }
 
-impl<'a, B, Q, I> Overlapping<'a, B, Q, I>
+impl<'a, R, S, T> Overlapping<'a, R, S, T>
 where
-    B: Ord,
-    Q: Interval<B>,
-    I: Interval<B> + Borrow<Q>,
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
 {
-    fn new(elements: &'a [Element<B, I>], query: &'a Q) -> Self {
+    fn new(elements: &'a [Element<R, T>], query: &'a S) -> Self {
         // Find the index of the first overlapping interval in the top-most sublist.
         let mut index = 0;
-        while index < elements.len()
-            && Interval::end(&elements[index].value) <= Interval::start(query)
-        {
+        while index < elements.len() && !elements[index].value.overlapping(query) {
             index += elements[index].sublist_len + 1;
         }
         Overlapping {
@@ -578,13 +578,13 @@ where
     }
 }
 
-impl<'a, B, Q, I> Iterator for Overlapping<'a, B, Q, I>
+impl<'a, R, S, T> Iterator for Overlapping<'a, R, S, T>
 where
-    B: Ord,
-    Q: Interval<B>,
-    I: Interval<B> + Borrow<Q>,
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
 {
-    type Item = OverlappingElement<'a, B, Q, I>;
+    type Item = OverlappingElement<'a, R, S, T>;
 
     /// Returns the next outer-most element.
     ///
@@ -606,7 +606,7 @@ where
     /// [`sublist()`]: OverlappingElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(sublist_element) = self.sublist.next() {
-            if nestable_overlap(Borrow::borrow(sublist_element.value), self.query) {
+            if sublist_element.value.overlapping(self.query) {
                 return Some(OverlappingElement {
                     value: sublist_element.value,
                     sublist_elements: sublist_element.sublist_elements,
@@ -690,18 +690,18 @@ where
 /// [`sublist()`]: Self::sublist()
 /// [`Iterator`]: core::iter::Iterator
 #[derive(Debug)]
-pub struct NestedContainmentList<B, I>
+pub struct NestedContainmentList<R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
-    elements: Vec<Element<B, I>>,
+    elements: Vec<Element<R, T>>,
 }
 
-impl<B, I> NestedContainmentList<B, I>
+impl<R, T> NestedContainmentList<R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
     /// Construct an empty `NestedContainmentList`.
     ///
@@ -712,7 +712,7 @@ where
     /// use nested_containment_list::NestedContainmentList;
     /// use std::ops::Range;
     ///
-    /// let nclist = NestedContainmentList::<usize, Range<usize>>::new();
+    /// let nclist = NestedContainmentList::<Range<usize>, usize>::new();
     /// ```
     ///
     /// [`Range<usize>`]: core::ops::Range
@@ -784,7 +784,7 @@ where
     /// use nested_containment_list::NestedContainmentList;
     /// use std::ops::Range;
     ///
-    /// let nclist = NestedContainmentList::<usize, Range<usize>>::with_capacity(10);
+    /// let nclist = NestedContainmentList::<Range<usize>, usize>::with_capacity(10);
     /// assert_eq!(nclist.capacity(), 10);
     /// ```
     pub fn capacity(&self) -> usize {
@@ -826,7 +826,7 @@ where
     ///
     /// [`overlapping()`]: Self::overlapping()
     /// [`Iterator`]: core::iter::Iterator
-    pub fn sublist<'a>(&'a self) -> Sublist<'a, B, I> {
+    pub fn sublist<'a>(&'a self) -> Sublist<'a, R, T> {
         Sublist::new(&self.elements)
     }
 
@@ -865,10 +865,9 @@ where
     ///
     /// [`sublist()`]: Self::sublist()
     /// [`Iterator`]: core::iter::Iterator
-    pub fn overlapping<'a, Q>(&'a self, query: &'a Q) -> Overlapping<'a, B, Q, I>
+    pub fn overlapping<'a, S>(&'a self, query: &'a S) -> Overlapping<'a, R, S, T>
     where
-        Q: Interval<B>,
-        I: Borrow<Q>,
+        S: RangeBounds<T>,
     {
         Overlapping::new(&self.elements, query)
     }
@@ -888,19 +887,19 @@ where
     /// let mut nclist = NestedContainmentList::new();
     /// nclist.insert(1..2);
     /// ```
-    pub fn insert(&mut self, value: I) {
+    pub fn insert(&mut self, value: R) {
         // Direct insertion.
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
         let mut indices = 0..self.elements.len();
         while let Some(index) = indices.next() {
             // If the value is ordered less than or equal to this element, then insert the value
             // before this element.
-            match nestable_ordering(&value, &self.elements[index].value) {
+            match value.ordering(&self.elements[index].value) {
                 Ordering::Less | Ordering::Equal => {
                     // Find the length of the value's sublist.
                     let mut len = 0;
                     for inner_index in index..self.elements.len() {
-                        if nestable_contains(&value, &self.elements[inner_index].value) {
+                        if Nestable::contains(&value, &self.elements[inner_index].value) {
                             len += 1;
                         } else {
                             break;
@@ -925,7 +924,7 @@ where
             }
 
             let element = &self.elements[index];
-            if nestable_contains(&element.value, &value) {
+            if Nestable::contains(&element.value, &value) {
                 // Proceed down this element's path.
                 sublist_indices.push(index);
             } else {
@@ -962,14 +961,14 @@ where
     /// ```
     pub fn remove<Q>(&mut self, value: &Q) -> bool
     where
-        Q: Interval<B>,
-        I: Borrow<Q>,
+        Q: RangeBounds<T>,
+        R: Borrow<Q>,
     {
         // Direct removal.
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
         let mut indices = 0..self.elements.len();
         while let Some(index) = indices.next() {
-            match nestable_ordering(value, Borrow::borrow(&self.elements[index].value)) {
+            match value.ordering(&self.elements[index].value) {
                 // If the value is nestably equal to this element, remove it.
                 Ordering::Equal => {
                     self.elements.remove(index);
@@ -989,7 +988,7 @@ where
             }
 
             let element = &self.elements[index];
-            if nestable_contains(Borrow::borrow(&element.value), value) {
+            if Nestable::contains(&element.value, value) {
                 // Proceed down this element's path.
                 sublist_indices.push(index);
             } else {
@@ -1008,29 +1007,29 @@ where
 // alternative sort_by.
 #[cfg(rustc_1_20)]
 #[inline]
-fn sort_values<B, I>(values: &mut Vec<I>)
+fn sort_values<R, T>(values: &mut Vec<R>)
 where
-    B: Ord,
-    I: Interval<B> + Clone,
+    R: RangeBounds<T> + Clone,
+    T: Ord,
 {
-    values.sort_unstable_by(nestable_ordering);
+    values.sort_unstable_by(Nestable::ordering);
 }
 
 // Otherwise, we use the regular sort_by.
 #[cfg(not(rustc_1_20))]
 #[inline]
-fn sort_values<B, I>(values: &mut Vec<I>)
+fn sort_values<R, T>(values: &mut Vec<R>)
 where
-    B: Ord,
-    I: Interval<B> + Clone,
+    R: RangeBounds<T> + Clone,
+    T: Ord,
 {
     values.sort_by(nestable_ordering);
 }
 
-impl<B, I> NestedContainmentList<B, I>
+impl<R, T> NestedContainmentList<R, T>
 where
-    B: Ord,
-    I: Interval<B> + Clone,
+    R: RangeBounds<T> + Clone,
+    T: Ord,
 {
     /// Construct a `NestedContainmentList` from a slice.
     ///
@@ -1046,20 +1045,20 @@ where
     ///
     /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
     /// ```
-    pub fn from_slice(values: &[I]) -> Self {
+    pub fn from_slice(values: &[R]) -> Self {
         // Sort the elements.
         let mut values = values.to_vec();
         sort_values(&mut values);
 
         // Depth-first construction.
-        let mut elements: Vec<Element<B, I>> = Vec::with_capacity(values.len());
+        let mut elements: Vec<Element<R, T>> = Vec::with_capacity(values.len());
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(values.len());
         for index in 0..values.len() {
             let value = values.remove(0);
             while !sublist_indices.is_empty() {
                 let sublist_index = sublist_indices.pop().unwrap();
 
-                if nestable_contains(&elements[sublist_index].value, &value) {
+                if Nestable::contains(&elements[sublist_index].value, &value) {
                     // We are within the previous sublist.
                     sublist_indices.push(sublist_index);
                     break;
@@ -1088,10 +1087,10 @@ where
     }
 }
 
-impl<B, I> Default for NestedContainmentList<B, I>
+impl<R, T> Default for NestedContainmentList<R, T>
 where
-    B: Ord,
-    I: Interval<B>,
+    R: RangeBounds<T>,
+    T: Ord,
 {
     /// Constructs a new, empty `NestedContainmentList`. Equivalent to [`new()`].
     ///
@@ -1100,7 +1099,7 @@ where
     /// use nested_containment_list::NestedContainmentList;
     /// use std::ops::Range;
     ///
-    /// let nclist = NestedContainmentList::<usize, Range<usize>>::default();
+    /// let nclist = NestedContainmentList::<Range<usize>, usize>::default();
     /// ```
     ///
     /// [`new()`]: Self::new()
@@ -1119,7 +1118,7 @@ mod tests {
 
     #[test]
     fn new() {
-        let nclist = NestedContainmentList::<usize, Range<usize>>::new();
+        let nclist = NestedContainmentList::<Range<usize>, usize>::new();
 
         // Check that the sublist is empty.
         assert_none!(nclist.sublist().next());
@@ -1127,7 +1126,7 @@ mod tests {
 
     #[test]
     fn default() {
-        let nclist = NestedContainmentList::<usize, Range<usize>>::default();
+        let nclist = NestedContainmentList::<Range<usize>, usize>::default();
 
         // Check that the sublist is empty.
         assert_none!(nclist.sublist().next());
@@ -1146,7 +1145,7 @@ mod tests {
 
     #[test]
     fn is_empty() {
-        assert!(NestedContainmentList::<usize, Range<usize>>::new().is_empty());
+        assert!(NestedContainmentList::<Range<usize>, usize>::new().is_empty());
     }
 
     #[test]
@@ -1156,7 +1155,7 @@ mod tests {
 
     #[test]
     fn capacity() {
-        let nclist = NestedContainmentList::<usize, Range<usize>>::with_capacity(10);
+        let nclist = NestedContainmentList::<Range<usize>, usize>::with_capacity(10);
 
         assert_eq!(nclist.capacity(), 10);
     }
@@ -1290,7 +1289,7 @@ mod tests {
 
     #[test]
     fn remove_from_empty() {
-        let mut nclist = NestedContainmentList::<usize, Range<usize>>::new();
+        let mut nclist = NestedContainmentList::<Range<usize>, usize>::new();
 
         assert!(!nclist.remove(&(1..5)));
     }
