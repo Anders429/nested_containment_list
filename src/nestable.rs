@@ -39,6 +39,54 @@ where
     }
 }
 
+/// Internal function for finding overlap one way.
+///
+/// This performs the comparison upon `other.end_bound()`, finding whether it lies in the range
+/// `this`.
+///
+/// This calculation is preferred over `RangeBounds::contains()`, as it takes into account the
+/// `Bound` variants.
+///
+/// Note that this is a "naive" implementation, as it only accounts for half the cases. If `other`
+/// is unbounded above, for example, this will fail. The full check should be done both ways.
+#[inline]
+fn overlap_naive<R, S, T>(this: &R, other: &S) -> bool
+where
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
+{
+    match (this.start_bound(), this.end_bound(), other.end_bound()) {
+        (Unbounded, Unbounded, _) | (_, Unbounded, Unbounded) => true,
+        (_, _, Unbounded) => false,
+        (Unbounded, Included(this_end), Included(other_end))
+        | (Unbounded, Excluded(this_end), Excluded(other_end))
+        | (Unbounded, Included(this_end), Excluded(other_end)) => this_end >= other_end,
+        (Unbounded, Excluded(this_end), Included(other_end)) => this_end > other_end,
+        (Included(this_start), Unbounded, Included(other_end)) => this_start <= other_end,
+        (Included(this_start), Unbounded, Excluded(other_end))
+        | (Excluded(this_start), Unbounded, Included(other_end))
+        | (Excluded(this_start), Unbounded, Excluded(other_end)) => this_start < other_end,
+        (Included(this_start), Included(this_end), Included(other_end)) => {
+            this_start <= other_end && this_end >= other_end
+        }
+        (Included(this_start), Included(this_end), Excluded(other_end))
+        | (Excluded(this_start), Included(this_end), Included(other_end))
+        | (Excluded(this_start), Excluded(this_end), Excluded(other_end))
+        | (Included(this_start), Excluded(this_end), Excluded(other_end))
+        | (Excluded(this_start), Included(this_end), Excluded(other_end)) => {
+            this_start < other_end && this_end >= other_end
+        }
+        (Included(this_start), Excluded(this_end), Included(other_end)) => {
+            this_start <= other_end && this_end > other_end
+        }
+
+        (Excluded(this_start), Excluded(this_end), Included(other_end)) => {
+            this_start < other_end && this_end > other_end
+        }
+    }
+}
+
 /// A trait for types which are nestable.
 ///
 /// This trait is automatically implemented on all types which implement `RangeBounds<T>` over a
@@ -52,12 +100,19 @@ where
     fn contains<S>(&self, inner: &S) -> bool
     where
         S: RangeBounds<T>;
+
     /// Ordering is calculated by comparing `start_bound()`. In the event of equality, ordering is
     /// then calculated by comparing `end_bound()` in reverse.
     ///
     /// This ordering guarantees that ranges will be immediately followed by each of their contained
     /// ranges.
     fn ordering<S>(&self, other: &S) -> Ordering
+    where
+        S: RangeBounds<T>;
+
+    /// `R` overlaps `S` if any part of the range `R` appears within the range `S`. This method
+    /// returns true if the two ranges overlap.
+    fn overlapping<S>(&self, other: &S) -> bool
     where
         S: RangeBounds<T>;
 }
@@ -106,6 +161,13 @@ where
             (Unbounded, _) => Less,
             (_, Unbounded) => Greater,
         }
+    }
+
+    fn overlapping<S>(&self, other: &S) -> bool
+    where
+        S: RangeBounds<T>,
+    {
+        overlap_naive(self, other) || overlap_naive(other, self)
     }
 }
 
@@ -1347,5 +1409,418 @@ mod tests {
                 .ordering(&RangeFromExclusiveToInclusive { start: 2, end: 5 }),
             Less
         );
+    }
+
+    #[test]
+    fn range_full_overlapping() {
+        assert!(Nestable::<RangeFull, usize>::overlapping(&(..), &(..)));
+        assert!((..).overlapping(&(1..)));
+        assert!((..).overlapping(&(..2)));
+        assert!((..).overlapping(&(..=2)));
+        assert!((..).overlapping(&(1..2)));
+        assert!((..).overlapping(&(1..=2)));
+        assert!((..).overlapping(&RangeFromExclusive { start: 1 }));
+        assert!((..).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 2 }));
+        assert!((..).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 2 }));
+    }
+
+    #[test]
+    fn range_from_overlapping() {
+        assert!((1..).overlapping(&(..)));
+        assert!((1..).overlapping(&(0..)));
+        assert!((1..).overlapping(&(1..)));
+        assert!((1..).overlapping(&(2..)));
+        assert!(!(1..).overlapping(&(..0)));
+        assert!(!(1..).overlapping(&(..1)));
+        assert!((1..).overlapping(&(..2)));
+        assert!(!(1..).overlapping(&(..=0)));
+        assert!((1..).overlapping(&(..=1)));
+        assert!((1..).overlapping(&(..=2)));
+        assert!(!(1..).overlapping(&(0..0)));
+        assert!(!(1..).overlapping(&(0..1)));
+        assert!((1..).overlapping(&(0..2)));
+        assert!((1..).overlapping(&(1..2)));
+        assert!(!(1..).overlapping(&(0..=0)));
+        assert!((1..).overlapping(&(0..=1)));
+        assert!((1..).overlapping(&(0..=2)));
+        assert!((1..).overlapping(&(1..=2)));
+        assert!((1..).overlapping(&RangeFromExclusive { start: 0 }));
+        assert!((1..).overlapping(&RangeFromExclusive { start: 1 }));
+        assert!((1..).overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!(1..).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 0 }));
+        assert!(!(1..).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!((1..).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 2 }));
+        assert!((1..).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 2 }));
+        assert!(!(1..).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 0 }));
+        assert!((1..).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!((1..).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 2 }));
+        assert!((1..).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 2 }));
+    }
+
+    #[test]
+    fn range_to_overlapping() {
+        assert!((..2).overlapping(&(..)));
+        assert!((..2).overlapping(&(1..)));
+        assert!(!(..2).overlapping(&(2..)));
+        assert!(!(..2).overlapping(&(3..)));
+        assert!((..2).overlapping(&(..1)));
+        assert!((..2).overlapping(&(..2)));
+        assert!((..2).overlapping(&(..3)));
+        assert!((..2).overlapping(&(..=1)));
+        assert!((..2).overlapping(&(..=2)));
+        assert!((..2).overlapping(&(..=3)));
+        assert!((..2).overlapping(&(0..1)));
+        assert!((..2).overlapping(&(1..2)));
+        assert!((..2).overlapping(&(1..3)));
+        assert!(!(..2).overlapping(&(2..3)));
+        assert!(!(..2).overlapping(&(3..4)));
+        assert!((..2).overlapping(&(0..=1)));
+        assert!((..2).overlapping(&(1..=2)));
+        assert!((..2).overlapping(&(1..=3)));
+        assert!(!(..2).overlapping(&(2..=3)));
+        assert!(!(..2).overlapping(&(3..=4)));
+        assert!((..2).overlapping(&RangeFromExclusive { start: 1 }));
+        assert!(!(..2).overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!(..2).overlapping(&RangeFromExclusive { start: 3 }));
+        assert!((..2).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!((..2).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 2 }));
+        assert!((..2).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 3 }));
+        assert!(!(..2).overlapping(&RangeFromExclusiveToExclusive { start: 2, end: 3 }));
+        assert!(!(..2).overlapping(&RangeFromExclusiveToExclusive { start: 3, end: 4 }));
+        assert!((..2).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!((..2).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 2 }));
+        assert!((..2).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 3 }));
+        assert!(!(..2).overlapping(&RangeFromExclusiveToInclusive { start: 2, end: 3 }));
+        assert!(!(..2).overlapping(&RangeFromExclusiveToInclusive { start: 3, end: 4 }));
+    }
+
+    #[test]
+    fn range_to_inclusive_overlapping() {
+        assert!((..=2).overlapping(&(..)));
+        assert!((..=2).overlapping(&(1..)));
+        assert!((..=2).overlapping(&(2..)));
+        assert!(!(..=2).overlapping(&(3..)));
+        assert!((..=2).overlapping(&(..1)));
+        assert!((..=2).overlapping(&(..2)));
+        assert!((..=2).overlapping(&(..3)));
+        assert!((..=2).overlapping(&(..=1)));
+        assert!((..=2).overlapping(&(..=2)));
+        assert!((..=2).overlapping(&(..=3)));
+        assert!((..=2).overlapping(&(0..1)));
+        assert!((..=2).overlapping(&(1..2)));
+        assert!((..=2).overlapping(&(1..3)));
+        assert!((..=2).overlapping(&(2..3)));
+        assert!(!(..=2).overlapping(&(3..4)));
+        assert!((..=2).overlapping(&(0..=1)));
+        assert!((..=2).overlapping(&(1..=2)));
+        assert!((..=2).overlapping(&(1..=3)));
+        assert!((..=2).overlapping(&(2..=3)));
+        assert!(!(..=2).overlapping(&(3..=4)));
+        assert!((..=2).overlapping(&RangeFromExclusive { start: 1 }));
+        assert!(!(..=2).overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!(..=2).overlapping(&RangeFromExclusive { start: 3 }));
+        assert!((..=2).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!((..=2).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 2 }));
+        assert!((..=2).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 3 }));
+        assert!(!(..=2).overlapping(&RangeFromExclusiveToExclusive { start: 2, end: 3 }));
+        assert!(!(..=2).overlapping(&RangeFromExclusiveToExclusive { start: 3, end: 4 }));
+        assert!((..=2).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!((..=2).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 2 }));
+        assert!((..=2).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 3 }));
+        assert!(!(..=2).overlapping(&RangeFromExclusiveToInclusive { start: 2, end: 3 }));
+        assert!(!(..=2).overlapping(&RangeFromExclusiveToInclusive { start: 3, end: 4 }));
+    }
+
+    #[test]
+    fn range_overlapping() {
+        assert!((1..4).overlapping(&(..)));
+        assert!((1..4).overlapping(&(0..)));
+        assert!((1..4).overlapping(&(2..)));
+        assert!(!(1..4).overlapping(&(4..)));
+        assert!(!(1..4).overlapping(&(5..)));
+        assert!(!(1..4).overlapping(&(..0)));
+        assert!(!(1..4).overlapping(&(..1)));
+        assert!((1..4).overlapping(&(..2)));
+        assert!((1..4).overlapping(&(..5)));
+        assert!(!(1..4).overlapping(&(..=0)));
+        assert!((1..4).overlapping(&(..=1)));
+        assert!((1..4).overlapping(&(..=2)));
+        assert!((1..4).overlapping(&(..=5)));
+        assert!(!(1..4).overlapping(&(0..0)));
+        assert!(!(1..4).overlapping(&(0..1)));
+        assert!((1..4).overlapping(&(0..2)));
+        assert!((1..4).overlapping(&(2..3)));
+        assert!((1..4).overlapping(&(1..4)));
+        assert!((1..4).overlapping(&(3..5)));
+        assert!(!(1..4).overlapping(&(4..6)));
+        assert!(!(1..4).overlapping(&(5..6)));
+        assert!(!(1..4).overlapping(&(0..=0)));
+        assert!((1..4).overlapping(&(0..=1)));
+        assert!((1..4).overlapping(&(0..=2)));
+        assert!((1..4).overlapping(&(2..=3)));
+        assert!((1..4).overlapping(&(1..=4)));
+        assert!((1..4).overlapping(&(3..=5)));
+        assert!(!(1..4).overlapping(&(4..=6)));
+        assert!(!(1..4).overlapping(&(5..=6)));
+        assert!((1..4).overlapping(&RangeFromExclusive { start: 0 }));
+        assert!((1..4).overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusive { start: 4 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusive { start: 5 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 0 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 2 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToExclusive { start: 2, end: 3 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 4 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToExclusive { start: 3, end: 5 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToExclusive { start: 4, end: 6 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToExclusive { start: 5, end: 6 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 0 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 2 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToInclusive { start: 2, end: 3 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 4 }));
+        assert!((1..4).overlapping(&RangeFromExclusiveToInclusive { start: 3, end: 5 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToInclusive { start: 4, end: 6 }));
+        assert!(!(1..4).overlapping(&RangeFromExclusiveToInclusive { start: 5, end: 6 }));
+    }
+
+    #[test]
+    fn range_inclusive_overlapping() {
+        assert!((1..=4).overlapping(&(..)));
+        assert!((1..=4).overlapping(&(0..)));
+        assert!((1..=4).overlapping(&(2..)));
+        assert!((1..=4).overlapping(&(4..)));
+        assert!(!(1..=4).overlapping(&(5..)));
+        assert!(!(1..=4).overlapping(&(..0)));
+        assert!(!(1..=4).overlapping(&(..1)));
+        assert!((1..=4).overlapping(&(..2)));
+        assert!((1..=4).overlapping(&(..5)));
+        assert!(!(1..=4).overlapping(&(..=0)));
+        assert!((1..=4).overlapping(&(..=1)));
+        assert!((1..=4).overlapping(&(..=2)));
+        assert!((1..=4).overlapping(&(..=5)));
+        assert!(!(1..=4).overlapping(&(0..0)));
+        assert!(!(1..=4).overlapping(&(0..1)));
+        assert!((1..=4).overlapping(&(0..2)));
+        assert!((1..=4).overlapping(&(2..3)));
+        assert!((1..=4).overlapping(&(1..4)));
+        assert!((1..=4).overlapping(&(3..5)));
+        assert!((1..=4).overlapping(&(4..6)));
+        assert!(!(1..=4).overlapping(&(5..6)));
+        assert!(!(1..=4).overlapping(&(0..=0)));
+        assert!((1..=4).overlapping(&(0..=1)));
+        assert!((1..=4).overlapping(&(0..=2)));
+        assert!((1..=4).overlapping(&(2..=3)));
+        assert!((1..=4).overlapping(&(1..=4)));
+        assert!((1..=4).overlapping(&(3..=5)));
+        assert!((1..=4).overlapping(&(4..=6)));
+        assert!(!(1..=4).overlapping(&(5..=6)));
+        assert!((1..=4).overlapping(&RangeFromExclusive { start: 0 }));
+        assert!((1..=4).overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusive { start: 4 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusive { start: 5 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 0 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 2 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 2, end: 3 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 4 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 3, end: 5 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 4, end: 6 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToExclusive { start: 5, end: 6 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 0 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 2 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 2, end: 3 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 4 }));
+        assert!((1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 3, end: 5 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 4, end: 6 }));
+        assert!(!(1..=4).overlapping(&RangeFromExclusiveToInclusive { start: 5, end: 6 }));
+    }
+
+    #[test]
+    fn range_from_exclusive_overlapping() {
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(..)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(0..)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(1..)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(2..)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(..0)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(..1)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(..2)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(..=0)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(..=1)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(..=2)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(0..0)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(0..1)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(0..2)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(1..2)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(0..=0)));
+        assert!(!RangeFromExclusive { start: 1 }.overlapping(&(0..=1)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(0..=2)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&(1..=2)));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&RangeFromExclusive { start: 0 }));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&RangeFromExclusive { start: 1 }));
+        assert!(RangeFromExclusive { start: 1 }.overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 0 }));
+        assert!(!RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!(RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 2 }));
+        assert!(RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 2 }));
+        assert!(!RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 0 }));
+        assert!(!RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!(RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 2 }));
+        assert!(RangeFromExclusive { start: 1 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 2 }));
+    }
+
+    #[test]
+    fn range_from_exclusive_to_exclusive_overlapping() {
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(2..)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(4..)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(5..)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..0)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..1)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..2)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..5)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..=0)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..=1)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..=2)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(..=5)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..0)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..1)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..2)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(2..3)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(1..4)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(3..5)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(4..6)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(5..6)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..=0)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..=1)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(0..=2)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(2..=3)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(1..=4)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(3..=5)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(4..=6)));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }.overlapping(&(5..=6)));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 0 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 4 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 5 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 0 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 2 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 2, end: 3 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 4 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 3, end: 5 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 4, end: 6 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 5, end: 6 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 0 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 2 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 2, end: 3 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 4 }));
+        assert!(RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 3, end: 5 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 4, end: 6 }));
+        assert!(!RangeFromExclusiveToExclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 5, end: 6 }));
+    }
+
+    #[test]
+    fn range_from_exclusive_to_inclusive_overlapping() {
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(2..)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(4..)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(5..)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..0)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..1)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..2)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..5)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..=0)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..=1)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..=2)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(..=5)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..0)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..1)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..2)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(2..3)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(1..4)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(3..5)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(4..6)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(5..6)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..=0)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..=1)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(0..=2)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(2..=3)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(1..=4)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(3..=5)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(4..=6)));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }.overlapping(&(5..=6)));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 0 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 2 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 4 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusive { start: 5 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 0 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 1 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 0, end: 2 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 2, end: 3 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 1, end: 4 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 3, end: 5 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 4, end: 6 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToExclusive { start: 5, end: 6 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 0 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 1 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 0, end: 2 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 2, end: 3 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 1, end: 4 }));
+        assert!(RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 3, end: 5 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 4, end: 6 }));
+        assert!(!RangeFromExclusiveToInclusive { start: 1, end: 4 }
+            .overlapping(&RangeFromExclusiveToInclusive { start: 5, end: 6 }));
     }
 }
