@@ -925,29 +925,6 @@ where
     }
 }
 
-// If the rustc version is 1.20.0 or higher, we can use sort_unstable_by. It is faster than the
-// alternative sort_by.
-#[cfg(rustc_1_20)]
-#[inline]
-fn sort_values<R, T>(values: &mut Vec<R>)
-where
-    R: RangeBounds<T> + Clone,
-    T: Ord,
-{
-    values.sort_unstable_by(Nestable::ordering);
-}
-
-// Otherwise, we use the regular sort_by.
-#[cfg(not(rustc_1_20))]
-#[inline]
-fn sort_values<R, T>(values: &mut Vec<R>)
-where
-    R: RangeBounds<T> + Clone,
-    T: Ord,
-{
-    values.sort_by(nestable_ordering);
-}
-
 impl<R, T> NestedContainmentList<R, T>
 where
     R: RangeBounds<T> + Clone,
@@ -970,7 +947,7 @@ where
     pub fn from_slice(values: &[R]) -> Self {
         // Sort the elements.
         let mut values = values.to_vec();
-        sort_values(&mut values);
+        values.sort_unstable_by(Nestable::ordering);
 
         // Depth-first construction.
         let mut elements: Vec<Element<R, T>> = Vec::with_capacity(values.len());
