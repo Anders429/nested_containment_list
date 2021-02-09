@@ -281,9 +281,9 @@ where
             index += elements[index].sublist_len + 1;
         }
         Overlapping {
-            index: index,
-            elements: elements,
-            query: query,
+            index,
+            elements,
+            query,
         }
     }
 }
@@ -588,7 +588,7 @@ where
                     self.elements.insert(
                         index,
                         Element {
-                            value: value,
+                            value,
                             sublist_len: len,
                             _marker: PhantomData,
                         },
@@ -617,7 +617,7 @@ where
 
         // Since the value didn't belong somewhere in the middle, we must insert it at the end.
         self.elements.push(Element {
-            value: value,
+            value,
             sublist_len: 0,
             _marker: PhantomData,
         });
@@ -728,7 +728,7 @@ where
 
             sublist_indices.push(index);
             elements.push(Element {
-                value: value,
+                value,
                 sublist_len: 0,
                 _marker: PhantomData,
             });
@@ -740,7 +740,7 @@ where
             elements[sublist_index].sublist_len = len;
         }
 
-        NestedContainmentList { elements: elements }
+        NestedContainmentList { elements }
     }
 }
 
