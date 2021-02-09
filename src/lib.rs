@@ -100,13 +100,14 @@ extern crate more_ranges;
 mod nestable;
 
 use alloc::vec::Vec;
-use core::borrow::Borrow;
-use core::cmp::Ordering;
-use core::iter::Chain;
-use core::iter::Iterator;
-use core::marker::PhantomData;
-use core::ops::RangeBounds;
-use core::option;
+use core::{
+    borrow::Borrow,
+    cmp::Ordering,
+    iter::{Chain, Iterator},
+    marker::PhantomData,
+    ops::RangeBounds,
+    option,
+};
 use nestable::Nestable;
 
 #[derive(Debug)]
