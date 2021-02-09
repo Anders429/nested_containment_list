@@ -101,7 +101,6 @@ extern crate claim;
 #[cfg(test)]
 extern crate more_ranges;
 
-mod impls;
 mod nestable;
 
 use alloc::vec::Vec;
@@ -113,81 +112,6 @@ use core::marker::PhantomData;
 use core::ops::RangeBounds;
 use core::option;
 use nestable::Nestable;
-
-/// Trait for values that are intervals.
-///
-/// Here, an interval contains all values between the interval's [`start()`] and [`end()`],
-/// **including** [`start()`] and **excluding** [`end()`].
-///
-/// The bounding type `B` of the interval may be any type which implements [`Ord`].
-///
-/// # Example
-/// ```
-/// use nested_containment_list::Interval;
-///
-/// struct Foo {
-///     start: usize,
-///     end: usize,
-/// }
-///
-/// impl Interval<usize> for Foo {
-///     fn start(&self) -> usize {
-///         self.start
-///     }
-///
-///     fn end(&self) -> usize {
-///         self.end
-///     }
-/// }
-/// ```
-///
-/// [`start()`]: Self::start()
-/// [`end()`]: Self::end()
-/// ['Ord']: std::cmp::Ord
-pub trait Interval<B>
-where
-    B: Ord,
-{
-    /// The lower bound of the interval (inclusive).
-    fn start(&self) -> B;
-    /// The upper bound of the interval (exclusive).
-    fn end(&self) -> B;
-}
-
-fn nestable_contains<B, I>(a: &I, b: &I) -> bool
-where
-    B: Ord,
-    I: Interval<B>,
-{
-    Interval::start(a) <= Interval::start(b)
-        && Interval::start(b) <= Interval::end(b)
-        && Interval::end(b) <= Interval::end(a)
-}
-
-fn nestable_ordering<B, I>(a: &I, b: &I) -> Ordering
-where
-    B: Ord,
-    I: Interval<B>,
-{
-    if Interval::start(a) < Interval::start(b)
-        || Interval::start(a) == Interval::start(b) && Interval::end(a) > Interval::end(b)
-    {
-        Ordering::Less
-    } else if Interval::start(a) > Interval::start(b) || Interval::end(a) < Interval::end(b) {
-        Ordering::Greater
-    } else {
-        Ordering::Equal
-    }
-}
-
-fn nestable_overlap<B, I>(a: &I, b: &I) -> bool
-where
-    B: Ord,
-    I: Interval<B>,
-{
-    Interval::start(a) < Interval::end(b) && Interval::end(a) >= Interval::end(b)
-        || Interval::start(b) < Interval::end(a) && Interval::end(b) >= Interval::end(a)
-}
 
 #[derive(Debug)]
 struct Element<R, T>
