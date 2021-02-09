@@ -17,29 +17,10 @@ implementation provided here allows storage and querying of generic types using 
 
 ## Usage
 
-To allow a type to be stored and used with Nested Containment Lists, it must implement the
-[`Interval`](https://docs.rs/nested_containment_list/*/nested_containment_list/trait.Interval.html)
-trait.
-
-```rust
-use nested_containment_list::Interval;
-
-impl Interval<usize> for MyStruct {
-    fn start(&self) -> usize {
-        ...
-    }
-
-    fn end(&self) -> usize {
-        ...
-    }
-}
-```
-
-The type can then be stored within a Nested Containment List.
-
-Note that the `Interval` trait is already implemented for
-[`Range`](https://doc.rust-lang.org/std/ops/struct.Range.html). A `Range` can
-therefore be used in Nested Containment Lists, like so:
+Nested Containment Lists can store types which implement the
+[`RangeBounds`](https://doc.rust-lang.org/std/ops/trait.RangeBounds.html) trait. For example, a
+simple Nested Containment List storing
+[`Range`](https://doc.rust-lang.org/std/ops/struct.Range.html)s is constructed as follows:
 
 ```rust
 use nested_containment_list::NestedContainmentList;

@@ -1,12 +1,8 @@
 //! Implementation of a Nested Containment List.
 //!
-//! A Nested Containment List is a data structure for storing types that implement the [`Interval`]
-//! trait. Elements stored in a [`NestedContainmentList`] are stored in a nested structure to allow
-//! for easy querying using `Interval` queries.
-//!
-//! # Example Usage
-//! Given that `Interval` is implemented on [`Range`], the following examples will store and query
-//! on `Range`s.
+//! A Nested Containment List is a data structure for storing types that implement the
+//! [`std::ops::RangeBounds`] trait. Elements stored in a [`NestedContainmentList`] are stored in a
+//! nested structure to allow for easy querying using other `RangeBounds` queries.
 //!
 //! ## Construction
 //!
@@ -29,9 +25,9 @@
 //!
 //! ## Mutation
 //!
-//! A [`NestedContainmentList`] allows for insertion and removal of [`Interval`] types. Both of
-//! these methods have a temporal complexity of *O(log(n))*, where *n* is the number of `Interval`s
-//! stored in the data structure.
+//! A [`NestedContainmentList`] allows for insertion and removal of [`RangeBounds`] types. Both of
+//! these methods have a temporal complexity of *O(log(n))*, where *n* is the number of
+//! `RangeBounds` stored in the data structure.
 //!
 //! ```
 //! use nested_containment_list::NestedContainmentList;
@@ -84,7 +80,7 @@
 //! [`sublist()`]: NestedContainmentList::sublist()
 //! [`Iterator`]: core::iter::Iterator
 //! [`Iterator::flatten()`]: core::iter::Iterator::flatten()
-//! [`Range`]: core::ops::Range
+//! [`RangeBounds`]: core::ops::RangeBounds
 
 #![cfg_attr(rustc_1_36, no_std)]
 
@@ -149,7 +145,7 @@ where
     R: RangeBounds<T> + 'a,
     T: Ord + 'a,
 {
-    /// The element's contained [`Interval`].
+    /// The element's contained value.
     ///
     /// # Example
     /// ```
@@ -546,11 +542,11 @@ where
     }
 }
 
-/// Data structure for efficient storage and querying of [`Interval`]s.
+/// Data structure for efficient storage and querying of [`RangeBounds`].
 ///
 /// # Usage
 ///
-/// A `NestedContainmentList` is a collection of [`Interval`]s, and can be used similar to other
+/// A `NestedContainmentList` is a collection of [`RangeBounds`], and can be used similar to other
 /// collections. It has a [`len()`] and a [`capacity()`], allows for mutation through [`insert()`]
 /// and [`remove()`]. A main difference between `NestedContainmentList` and other Rust collections
 /// is how its contents are accessed: they may be iterated over through [`overlapping()`] and
@@ -558,11 +554,11 @@ where
 ///
 /// ## Construction
 ///
-/// A `NestedContainmentList` stores [`Interval`]s in a nested structure to allow for fast querying.
+/// A `NestedContainmentList` stores [`RangeBounds`] in a nested structure to allow for fast querying.
 /// Construction of a `NestedContainmentList` has temporal complexity *O(n log(n))*, where *n* is
-/// the number of [`Interval`]s being stored. Both insertion and removal, with [`insert()`] and
+/// the number of [`RangeBounds`] being stored. Both insertion and removal, with [`insert()`] and
 /// [`remove()`] respectively, into a `NestedContainmentList` has temporal complexity *O(log(n))*,
-/// where *n* is the number of [`Interval`]s currently stored.
+/// where *n* is the number of [`RangeBounds`] currently stored.
 ///
 /// ### Example
 /// Construction of a `NestedContainmentList` can be done as follows:
@@ -577,18 +573,19 @@ where
 ///
 /// When data is stored within a `NestedContainmentList`, it is typically accessed in two ways:
 ///
-/// * Querying for [`Interval`]s overlapping an [`Interval`], using the [`overlapping()`] method.
-/// * Interating through all [`Interval`]s in a nested [`Iterator`] structure, using the
+/// * Querying for [`RangeBounds`] overlapping another [`RangeBounds`], using the [`overlapping()`]
+/// method.
+/// * Interating through all [`RangeBounds`] in a nested [`Iterator`] structure, using the
 /// [`sublist()`] method.
 ///
 /// Both methods return a nested [`Iterator`] structure, with the difference being that access
-/// through [`overlapping()`] only iterates over [`Interval`]s that overlap with the query
-/// [`Interval`]. For details on the [`Iterator`]s returned by these methods, see the documentation
+/// through [`overlapping()`] only iterates over [`RangeBounds`] that overlap with the query
+/// value. For details on the [`Iterator`]s returned by these methods, see the documentation
 /// for [`Overlapping`] and [`Sublist`].
 ///
 /// Querying using [`overlapping()`] has temporal complexity *O(n + log(N))*, where *N* is the
-/// number of [`Interval`]s stored, and *n* is the number of intervals overlapping with the query
-/// [`Interval`].
+/// number of [`RangeBounds`] stored, and *n* is the number of intervals overlapping with the query
+/// value.
 ///
 /// ### Example
 /// Access using either method can be done as follows:
@@ -613,6 +610,7 @@ where
 /// [`remove()`]: Self::remove()
 /// [`sublist()`]: Self::sublist()
 /// [`Iterator`]: core::iter::Iterator
+/// [`RangeBounds`]: core::ops::RangeBounds
 #[derive(Debug)]
 pub struct NestedContainmentList<R, T>
 where
@@ -648,7 +646,7 @@ where
 
     /// Construct an empty `NestedContainmentList` with the specified capacity.
     ///
-    /// The `NestedContainmentList` will be able to hold exactly `capacity` [`Interval`]s without
+    /// The `NestedContainmentList` will be able to hold exactly `capacity` [`RangeBounds`] without
     /// reallocating. If `capacity` is `0`, the `NestedContainmentList` will not allocate.
     ///
     /// Note that `capacity` is not the same as `len`. `len` is how many elements are actually
@@ -717,8 +715,8 @@ where
 
     /// Returns a [`Sublist`] [`Iterator`] over all elements within the `NestedContainmentList`.
     ///
-    /// The [`Sublist`] is a nested [`Iterator`] over the values contained. All [`Interval`]s
-    /// contained within other [`Interval`]s in the collection are accessed as nested [`Sublist`]s
+    /// The [`Sublist`] is a nested [`Iterator`] over the values contained. All [`RangeBounds`]
+    /// contained within other [`RangeBounds`] in the collection are accessed as nested [`Sublist`]s
     /// under their outer-most values.
     ///
     /// Iterating using this method is very similar to iterating using the [`overlapping()`] method.
@@ -758,8 +756,8 @@ where
     /// `NestedContainmentList`.
     ///
     /// The [`Overlapping`] is a nested [`Iterator`] over all values contained in the
-    /// `NestedContainmentList` that overlap with the `query` [`Interval`]. All [`Interval`]s
-    /// contained within other [`Interval`]s in the collection that also overlap with the `query`
+    /// `NestedContainmentList` that overlap with the `query` [`RangeBounds`]. All [`RangeBounds`]
+    /// contained within other [`RangeBounds`] in the collection that also overlap with the `query`
     /// are accessed as nested [`Overlapping`]s under their outer-most values.
     ///
     /// Iterating using this method is very similar to iterating using the [`sublist()`] method.
@@ -960,7 +958,7 @@ where
     /// The elements within the slice are cloned into the new `NestedContainmentList`.
     ///
     /// This construction has temporal complexity of *O(n log(n))*, where *n* is the length of the
-    /// slice. If you already have a collection of [`Interval`]s that you wish to use to create a
+    /// slice. If you already have a collection of [`RangeBounds`] that you wish to use to create a
     /// `NestedContainmentList`, this is likely the most efficient way to do so.
     ///
     /// # Example
