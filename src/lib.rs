@@ -102,7 +102,7 @@ use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
     cmp::Ordering,
-    iter::{Chain, FusedIterator, Iterator},
+    iter::{Chain, FromIterator, FusedIterator, Iterator},
     marker::PhantomData,
     ops::RangeBounds,
     option,
@@ -743,6 +743,70 @@ where
     }
 }
 
+impl<R, T> FromIterator<R> for NestedContainmentList<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    /// Construct a `NestedContainmentList` from an [`Iterator`].
+    ///
+    /// This construction has temporal complexity of *O(n log(n))*, where *n* is the length of the
+    /// `Iterator`.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
+    /// ```
+    ///
+    /// [`Iterator`]: core::iter::Iterator
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = R>,
+    {
+        // Sort the elements.
+        let mut values = iter.into_iter().collect::<Vec<_>>();
+        values.sort_unstable_by(Nestable::ordering);
+
+        // Depth-first construction.
+        let mut elements: Vec<Element<R, T>> = Vec::with_capacity(values.len());
+        let mut sublist_indices: Vec<usize> = Vec::with_capacity(values.len());
+        for index in 0..values.len() {
+            let value = values.remove(0);
+            while !sublist_indices.is_empty() {
+                let sublist_index = sublist_indices.pop().unwrap();
+
+                if Nestable::contains(&elements[sublist_index].value, &value) {
+                    // We are within the previous sublist.
+                    sublist_indices.push(sublist_index);
+                    break;
+                } else {
+                    // We are no longer within the previous sublist.
+                    let len = index - sublist_index - 1;
+                    elements[sublist_index].sublist_len = len;
+                }
+            }
+
+            sublist_indices.push(index);
+            elements.push(Element {
+                value,
+                sublist_len: 0,
+                _marker: PhantomData,
+            });
+        }
+
+        // Clean up remaining sublist indices.
+        for sublist_index in sublist_indices {
+            let len = elements.len() - sublist_index - 1;
+            elements[sublist_index].sublist_len = len;
+        }
+
+        NestedContainmentList { elements }
+    }
+}
+
 impl<R, T> Default for NestedContainmentList<R, T>
 where
     R: RangeBounds<T>,
@@ -767,9 +831,12 @@ where
 #[cfg(test)]
 mod tests {
     #[cfg(not(rust_1_36))]
+    extern crate std as alloc;
+    #[cfg(not(rust_1_36))]
     extern crate std as core;
 
-    use core::ops::Range;
+    use alloc::vec;
+    use core::{iter::FromIterator, ops::Range};
     use NestedContainmentList;
 
     #[test]
@@ -1080,6 +1147,26 @@ mod tests {
     #[test]
     fn from_slice() {
         let nclist = NestedContainmentList::from_slice(&[1..5, 3..4, 2..4, 6..7]);
+
+        let mut sublist = nclist.overlapping(&(..));
+        let first_sublist_element = sublist.next().unwrap();
+        assert_eq!(first_sublist_element.value, &(1..5));
+        let mut first_sublist_element_sublist = first_sublist_element.sublist();
+        let second_sublist_element = first_sublist_element_sublist.next().unwrap();
+        assert_eq!(second_sublist_element.value, &(2..4));
+        let mut second_sublist_element_sublist = second_sublist_element.sublist();
+        assert_eq!(
+            second_sublist_element_sublist.next().unwrap().value,
+            &(3..4)
+        );
+        assert_none!(first_sublist_element_sublist.next());
+        assert_eq!(sublist.next().unwrap().value, &(6..7));
+        assert_none!(sublist.next());
+    }
+
+    #[test]
+    fn from_iter() {
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
 
         let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
