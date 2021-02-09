@@ -51,7 +51,7 @@
 //! use nested_containment_list::NestedContainmentList;
 //!
 //! let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 6..7]);
-//! let mut sublist = nclist.sublist();
+//! let mut sublist = nclist.overlapping(&(..));
 //!
 //! // The first element in the top-most sublist, 1..5.
 //! let first_element = sublist.next().unwrap();
@@ -119,216 +119,6 @@ where
     value: R,
     sublist_len: usize,
     _marker: PhantomData<T>,
-}
-
-/// An element contained within a [`Sublist`].
-///
-/// This element allows access to its contained value `I` and its sub-elements.
-///
-/// A `SublistElement` is usually obtained from iterating over a `Sublist`.
-///
-/// # Example
-/// ```
-/// use nested_containment_list::NestedContainmentList;
-///
-/// let nclist = NestedContainmentList::from_slice(&[1..4, 2..3]);
-/// let mut sublist = nclist.sublist();
-///
-/// let sublist_element = sublist.next().unwrap();
-/// assert_eq!(sublist_element.value, &(1..4));
-///
-/// let inner_sublist_element = sublist_element.sublist().next().unwrap();
-/// assert_eq!(inner_sublist_element.value, &(2..3));
-/// ```
-#[derive(Debug)]
-pub struct SublistElement<'a, R, T>
-where
-    R: RangeBounds<T> + 'a,
-    T: Ord + 'a,
-{
-    /// The element's contained value.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..2]);
-    /// let mut sublist = nclist.sublist();
-    ///
-    /// let sublist_element = sublist.next().unwrap();
-    /// assert_eq!(sublist_element.value, &(1..2));
-    pub value: &'a R,
-    sublist_elements: &'a [Element<R, T>],
-    _marker: PhantomData<T>,
-}
-
-impl<'a, R, T> SublistElement<'a, R, T>
-where
-    R: RangeBounds<T>,
-    T: Ord,
-{
-    /// Return a [`Sublist`] [`Iterator`] over this element's contained sublist.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 3..4]);
-    /// let mut sublist = nclist.sublist();
-    ///
-    /// let sublist_element = sublist.next().unwrap();
-    /// assert_eq!(sublist_element.value, &(1..5));
-    ///
-    /// let mut inner_sublist = sublist_element.sublist();
-    /// assert_eq!(inner_sublist.next().unwrap().value, &(2..3));
-    /// assert_eq!(inner_sublist.next().unwrap().value, &(3..4));
-    /// ```
-    ///
-    /// [`Iterator`]: core::iter::Iterator
-    pub fn sublist(&self) -> Sublist<'a, R, T> {
-        Sublist::new(self.sublist_elements)
-    }
-}
-
-impl<'a, R, T> IntoIterator for SublistElement<'a, R, T>
-where
-    R: RangeBounds<T>,
-    T: Ord,
-{
-    type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Sublist<'a, R, T>>;
-
-    /// Convert the element into an iterator, first returning the element's `value`, then each of
-    /// the topmost elements in the element's sublist.
-    ///
-    /// This can conceptually be thought of as flattening the element with its top-most sublist.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 3..4]);
-    /// let mut sublist = nclist.sublist();
-    ///
-    /// let sublist_element = sublist.next().unwrap();
-    ///
-    /// let mut sublist_element_iter = sublist_element.into_iter();
-    /// assert_eq!(sublist_element_iter.next().unwrap().value, &(1..5));
-    /// assert_eq!(sublist_element_iter.next().unwrap().value, &(2..3));
-    /// assert_eq!(sublist_element_iter.next().unwrap().value, &(3..4));
-    /// ```
-    fn into_iter(self) -> Self::IntoIter {
-        Some(SublistElement {
-            value: self.value,
-            sublist_elements: &[],
-            _marker: PhantomData,
-        })
-        .into_iter()
-        .chain(self.sublist())
-    }
-}
-
-/// An [`Iterator`] over all elements in a [`NestedContainmentList`].
-///
-/// This [`Iterator`] is typically created from the [`NestedContainmentList::sublist()`] method.
-///
-/// Iterates over all elements within the [`NestedContainmentList`] in a nested structure, with all
-/// elements contained in other elements being accessed through those elements' [`sublist()`]
-/// methods.
-///
-/// # Example
-/// ```
-/// use nested_containment_list::NestedContainmentList;
-///
-/// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
-/// let mut sublist = nclist.sublist();
-///
-/// let first_element = sublist.next().unwrap();
-/// let second_element = sublist.next().unwrap();
-///
-/// // The outermost elements are accessed directly.
-/// assert_eq!(first_element.value, &(1..5));
-/// assert_eq!(second_element.value, &(5..7));
-///
-/// // Contained elements are accessed through their containing element's sublist.
-/// let mut inner_sublist = first_element.sublist();
-/// let inner_element = inner_sublist.next().unwrap();
-/// assert_eq!(inner_element.value, &(2..4));
-///
-/// // Further nested elements are accessed in further nested iterators.
-/// let mut inner_inner_sublist = inner_element.sublist();
-/// let inner_inner_element = inner_inner_sublist.next().unwrap();
-/// assert_eq!(inner_inner_element.value, &(3..4));
-/// ```
-///
-/// [`sublist()`]: SublistElement::sublist()
-/// [`Iterator`]: core::iter::Iterator
-#[derive(Debug)]
-pub struct Sublist<'a, R, T>
-where
-    R: RangeBounds<T> + 'a,
-    T: Ord + 'a,
-{
-    index: usize,
-    elements: &'a [Element<R, T>],
-}
-
-impl<'a, R, T> Sublist<'a, R, T>
-where
-    R: RangeBounds<T>,
-    T: Ord,
-{
-    fn new(elements: &'a [Element<R, T>]) -> Self {
-        Sublist {
-            index: 0,
-            elements: elements,
-        }
-    }
-}
-
-impl<'a, R, T> Iterator for Sublist<'a, R, T>
-where
-    R: RangeBounds<T>,
-    T: Ord,
-{
-    type Item = SublistElement<'a, R, T>;
-
-    /// Returns the next outer-most element.
-    ///
-    /// Note that any values contained within a returned element must be accessed through the
-    /// element's [`sublist()`] method.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5]);
-    /// let mut sublist = nclist.sublist();
-    ///
-    /// assert_eq!(sublist.next().unwrap().value, &(1..5));
-    /// assert!(sublist.next().is_none());
-    /// ```
-    ///
-    /// [`sublist()`]: SublistElement::sublist()
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.elements.len() {
-            return None;
-        }
-
-        let current_index = self.index;
-
-        // Next element.
-        let element = &self.elements[self.index];
-        // Skip over element's sublist.
-        self.index += element.sublist_len;
-        // Increment index to move to next element.
-        self.index += 1;
-        Some(SublistElement {
-            value: &element.value,
-            sublist_elements: &self.elements[(current_index + 1)..self.index],
-            _marker: PhantomData,
-        })
-    }
 }
 
 /// An element contained within an [`Overlapping`].
@@ -473,7 +263,8 @@ where
     S: RangeBounds<T> + 'a,
     T: Ord + 'a,
 {
-    sublist: Sublist<'a, R, T>,
+    index: usize,
+    elements: &'a [Element<R, T>],
     query: &'a S,
 }
 
@@ -490,10 +281,8 @@ where
             index += elements[index].sublist_len + 1;
         }
         Overlapping {
-            sublist: Sublist {
-                index: index,
-                elements: elements,
-            },
+            index: index,
+            elements: elements,
             query: query,
         }
     }
@@ -526,20 +315,27 @@ where
     ///
     /// [`sublist()`]: OverlappingElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(sublist_element) = self.sublist.next() {
-            if sublist_element.value.overlapping(self.query) {
-                return Some(OverlappingElement {
-                    value: sublist_element.value,
-                    sublist_elements: sublist_element.sublist_elements,
-                    query: self.query,
-                    _marker: PhantomData,
-                });
-            } else {
-                // End iteration, since there will be no more overlaps.
-                self.sublist.index = self.sublist.elements.len()
-            }
+        if self.index >= self.elements.len() {
+            return None;
         }
-        None
+        let current_index = self.index;
+        // Next element.
+        let element = &self.elements[self.index];
+
+        if element.value.overlapping(self.query) {
+            // Skip over element's sublist.
+            self.index += element.sublist_len + 1;
+            Some(OverlappingElement {
+                value: &element.value,
+                sublist_elements: &self.elements[(current_index + 1)..self.index],
+                query: self.query,
+                _marker: PhantomData,
+            })
+        } else {
+            // End iteration, since there will be no more overlaps.
+            self.index = self.elements.len();
+            None
+        }
     }
 }
 
@@ -597,7 +393,7 @@ where
 /// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
 ///
 /// // Creates a Sublist Iterator.
-/// let mut sublist = nclist.sublist();
+/// let mut sublist = nclist.overlapping(&(..));
 ///
 /// // Creates an Overlapping Iterator.
 /// let query = 4..6;
@@ -712,45 +508,6 @@ where
     /// ```
     pub fn capacity(&self) -> usize {
         self.elements.capacity()
-    }
-
-    /// Returns a [`Sublist`] [`Iterator`] over all elements within the `NestedContainmentList`.
-    ///
-    /// The [`Sublist`] is a nested [`Iterator`] over the values contained. All [`RangeBounds`]
-    /// contained within other [`RangeBounds`] in the collection are accessed as nested [`Sublist`]s
-    /// under their outer-most values.
-    ///
-    /// Iterating using this method is very similar to iterating using the [`overlapping()`] method.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
-    /// let mut sublist = nclist.sublist();
-    ///
-    /// let first_element = sublist.next().unwrap();
-    /// let second_element = sublist.next().unwrap();
-    ///
-    /// // The outermost elements are accessed directly.
-    /// assert_eq!(first_element.value, &(1..5));
-    /// assert_eq!(second_element.value, &(5..7));
-    ///
-    /// // Contained elements are accessed through their containing element's sublist.
-    /// let mut inner_sublist = first_element.sublist();
-    /// let inner_element = inner_sublist.next().unwrap();
-    /// assert_eq!(inner_element.value, &(2..4));
-    ///
-    /// // Further nested elements are accessed in further nested iterators.
-    /// let mut inner_inner_sublist = inner_element.sublist();
-    /// let inner_inner_element = inner_inner_sublist.next().unwrap();
-    /// assert_eq!(inner_inner_element.value, &(3..4));
-    /// ```
-    ///
-    /// [`overlapping()`]: Self::overlapping()
-    /// [`Iterator`]: core::iter::Iterator
-    pub fn sublist<'a>(&'a self) -> Sublist<'a, R, T> {
-        Sublist::new(&self.elements)
     }
 
     /// Returns an [`Overlapping`] [`Iterator`] over all elements within the
@@ -1021,7 +778,7 @@ mod tests {
         let nclist = NestedContainmentList::<Range<usize>, usize>::new();
 
         // Check that the sublist is empty.
-        assert_none!(nclist.sublist().next());
+        assert_none!(nclist.overlapping(&(..)).next());
     }
 
     #[test]
@@ -1029,7 +786,7 @@ mod tests {
         let nclist = NestedContainmentList::<Range<usize>, usize>::default();
 
         // Check that the sublist is empty.
-        assert_none!(nclist.sublist().next());
+        assert_none!(nclist.overlapping(&(..)).next());
     }
 
     #[test]
@@ -1066,7 +823,7 @@ mod tests {
 
         nclist.insert(1..5);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         assert_eq!(sublist.next().unwrap().value, &(1..5));
         assert_none!(sublist.next());
     }
@@ -1078,7 +835,7 @@ mod tests {
         nclist.insert(1..5);
         nclist.insert(2..4);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let sublist_first_element = sublist.next().unwrap();
         assert_eq!(sublist_first_element.value, &(1..5));
         let mut sublist_first_element_sublist = sublist_first_element.sublist();
@@ -1094,7 +851,7 @@ mod tests {
         nclist.insert(2..4);
         nclist.insert(1..5);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
@@ -1111,7 +868,7 @@ mod tests {
         nclist.insert(6..10);
         nclist.insert(2..4);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
@@ -1129,7 +886,7 @@ mod tests {
         nclist.insert(3..4);
         nclist.insert(2..4);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
@@ -1151,7 +908,7 @@ mod tests {
         nclist.insert(1..5);
         nclist.insert(1..5);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
@@ -1167,7 +924,7 @@ mod tests {
         nclist.insert(1..5);
         nclist.insert(6..10);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         assert_eq!(sublist.next().unwrap().value, &(1..5));
         assert_eq!(sublist.next().unwrap().value, &(6..10));
         assert_none!(sublist.next());
@@ -1179,7 +936,7 @@ mod tests {
 
         nclist.insert(6..8);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         assert_eq!(sublist.next().unwrap().value, &(1..4));
         let second_element = sublist.next().unwrap();
         assert_eq!(second_element.value, &(5..9));
@@ -1214,7 +971,7 @@ mod tests {
 
         assert!(nclist.remove(&(2..4)));
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_element = sublist.next().unwrap();
         assert_eq!(first_element.value, &(1..5));
         assert_none!(first_element.sublist().next());
@@ -1227,7 +984,7 @@ mod tests {
 
         assert!(nclist.remove(&(0..6)));
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_element = sublist.next().unwrap();
         assert_eq!(first_element.value, &(1..5));
         assert_none!(first_element.sublist().next());
@@ -1240,7 +997,7 @@ mod tests {
 
         assert!(nclist.remove(&(2..4)));
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
@@ -1325,7 +1082,7 @@ mod tests {
     fn from_slice() {
         let nclist = NestedContainmentList::from_slice(&[1..5, 3..4, 2..4, 6..7]);
 
-        let mut sublist = nclist.sublist();
+        let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
         assert_eq!(first_sublist_element.value, &(1..5));
         let mut first_sublist_element_sublist = first_sublist_element.sublist();
