@@ -102,7 +102,7 @@ use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
     cmp::Ordering,
-    iter::{Chain, Iterator},
+    iter::{Chain, FusedIterator, Iterator},
     marker::PhantomData,
     ops::RangeBounds,
     option,
@@ -336,6 +336,14 @@ where
             None
         }
     }
+}
+
+impl<R, S, T> FusedIterator for Overlapping<'_, R, S, T>
+where
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
+{
 }
 
 /// Data structure for efficient storage and querying of [`RangeBounds`].
