@@ -1,7 +1,7 @@
 //! Implementation of a Nested Containment List.
 //!
 //! A Nested Containment List is a data structure for storing types that implement the
-//! [`std::ops::RangeBounds`] trait. Elements stored in a [`NestedContainmentList`] are stored in a
+//! [`core::ops::RangeBounds`] trait. Elements stored in a [`NestedContainmentList`] are stored in a
 //! nested structure to allow for easy querying using other `RangeBounds` queries.
 //!
 //! ## Construction
@@ -345,8 +345,8 @@ where
 /// A `NestedContainmentList` is a collection of [`RangeBounds`], and can be used similar to other
 /// collections. It has a [`len()`] and a [`capacity()`], allows for mutation through [`insert()`]
 /// and [`remove()`]. A main difference between `NestedContainmentList` and other Rust collections
-/// is how its contents are accessed: they may be iterated over through [`overlapping()`] and
-/// [`sublist()`]. For further details, see [Data Access](#data-access).
+/// is how its contents are accessed: they may be iterated over through [`overlapping()`]. For
+/// further details, see [Data Access](#data-access).
 ///
 /// ## Construction
 ///
@@ -367,17 +367,13 @@ where
 ///
 /// ## Data Access
 ///
-/// When data is stored within a `NestedContainmentList`, it is typically accessed in two ways:
-///
-/// * Querying for [`RangeBounds`] overlapping another [`RangeBounds`], using the [`overlapping()`]
-/// method.
-/// * Interating through all [`RangeBounds`] in a nested [`Iterator`] structure, using the
-/// [`sublist()`] method.
+/// When data is stored within a `NestedContainmentList`, it is typically accessed by querying for
+/// [`RangeBounds`] overlapping another [`RangeBounds`], using the [`overlapping()`] method.
 ///
 /// Both methods return a nested [`Iterator`] structure, with the difference being that access
 /// through [`overlapping()`] only iterates over [`RangeBounds`] that overlap with the query
-/// value. For details on the [`Iterator`]s returned by these methods, see the documentation
-/// for [`Overlapping`] and [`Sublist`].
+/// value. For details on the [`Iterator`]s returned by these methods, see the documentation for
+/// [`Overlapping`].
 ///
 /// Querying using [`overlapping()`] has temporal complexity *O(n + log(N))*, where *N* is the
 /// number of [`RangeBounds`] stored, and *n* is the number of intervals overlapping with the query
@@ -404,7 +400,6 @@ where
 /// [`len()`]: Self::len()
 /// [`overlapping()`]: Self::overlapping()
 /// [`remove()`]: Self::remove()
-/// [`sublist()`]: Self::sublist()
 /// [`Iterator`]: core::iter::Iterator
 /// [`RangeBounds`]: core::ops::RangeBounds
 #[derive(Debug)]
@@ -517,8 +512,6 @@ where
     /// contained within other [`RangeBounds`] in the collection that also overlap with the `query`
     /// are accessed as nested [`Overlapping`]s under their outer-most values.
     ///
-    /// Iterating using this method is very similar to iterating using the [`sublist()`] method.
-    ///
     /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
@@ -542,7 +535,6 @@ where
     /// // Note that 2..3 is not found within the nested iterators, since 2..3 does not overlap with 3..6.
     /// ```
     ///
-    /// [`sublist()`]: Self::sublist()
     /// [`Iterator`]: core::iter::Iterator
     pub fn overlapping<'a, S>(&'a self, query: &'a S) -> Overlapping<'a, R, S, T>
     where
