@@ -338,7 +338,7 @@ where
     }
 }
 
-impl<R, S, T> FusedIterator for Overlapping<'_, R, S, T>
+impl<'a, R, S, T> FusedIterator for Overlapping<'a, R, S, T>
 where
     R: RangeBounds<T>,
     S: RangeBounds<T>,
