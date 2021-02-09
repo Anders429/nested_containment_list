@@ -40,12 +40,12 @@
 //!
 //! ## Iteration
 //!
-//! Iterating over a [`NestedContainmentList`] is done in a nested manner. [`Iterator`]s obtained
-//! from the [`sublist()`] and [`overlapping()`] methods iterate directly over the relevant top-most
-//! sublist, with intervals contained within the top-most elements being accessed through nested
-//! sublists.
+//! Iterating over a [`NestedContainmentList`] is done in a nested manner. An [`Iterator`] is
+//! obtained from the [`overlapping()`] method. It is used to iterate directly over the top-most
+//! sublist, returning values which overlap with the query range, with nested intervals contained
+//! within the top-most elements being accessed through nested sublists.
 //!
-//! For example, iterating using [`sublist()`] can be done as follows:
+//! For example, iterating over all elements can be done as follows:
 //!
 //! ```
 //! use nested_containment_list::NestedContainmentList;
@@ -77,7 +77,6 @@
 //! [`from_slice()`]: NestedContainmentList::from_slice()
 //! [`new()`]: NestedContainmentList::new()
 //! [`overlapping()`]: NestedContainmentList::overlapping()
-//! [`sublist()`]: NestedContainmentList::sublist()
 //! [`Iterator`]: core::iter::Iterator
 //! [`Iterator::flatten()`]: core::iter::Iterator::flatten()
 //! [`RangeBounds`]: core::ops::RangeBounds
