@@ -352,6 +352,14 @@ pub struct IterElement<R, T> where R: RangeBounds<T>, T: Ord {
     sublist_elements: Vec<Element<R, T>>,
 }
 
+impl<R, T> IterElement<R, T> where R:RangeBounds<T>, T: Ord {
+    pub fn sublist(self) -> Iter<R, T> {
+        Iter {
+            elements: self.sublist_elements,
+        }
+    }
+}
+
 pub struct Iter<R, T>
 where
     R: RangeBounds<T>,
