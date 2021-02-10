@@ -102,7 +102,7 @@ use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
     cmp::Ordering,
-    iter::{Chain, FromIterator, FusedIterator, Iterator, Once, once},
+    iter::{once, Chain, FromIterator, FusedIterator, Iterator, Once},
     marker::PhantomData,
     mem,
     ops::RangeBounds,
@@ -406,7 +406,7 @@ where
 impl<R, T> IntoIterator for IterElement<R, T>
 where
     R: RangeBounds<T>,
-    T: Ord
+    T: Ord,
 {
     type Item = Self;
     type IntoIter = Chain<Once<Self::Item>, Iter<R, T>>;
@@ -427,7 +427,7 @@ where
     ///
     /// assert_eq!(first_element_iter.next().unwrap().value, 1..4);
     /// assert_eq!(first_element_iter.next().unwrap().value, 2..3);
-    /// ``` 
+    /// ```
     ///
     /// [`Iterator`]: core::iter::Iterator
     fn into_iter(self) -> Self::IntoIter {
@@ -456,7 +456,7 @@ where
 ///
 /// let mut iter = nclist.into_iter();
 /// assert_eq!(iter.next().unwrap().value, 1..2);
-/// ``` 
+/// ```
 ///
 /// [`Iterator`]: core::iter::Iterator
 /// [`sublist()`]: IterElement::sublist()
@@ -486,7 +486,7 @@ where
     ///
     /// let mut iter = nclist.into_iter();
     /// assert_eq!(iter.next().unwrap().value, 1..2);
-    /// ``` 
+    /// ```
     fn next(&mut self) -> Option<Self::Item> {
         if self.elements.is_empty() {
             return None;
