@@ -349,6 +349,21 @@ where
 {
 }
 
+/// An element obtained from `Iter`.
+///
+/// This element allows access to its `value`, as well as providing an `Iterator` over all values
+/// nested within `value` through the `sublist()` method.
+///
+/// # Example
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+/// use std::iter::FromIterator;
+///
+/// let nclist = NestedContainmentList::from_iter(vec![1..2]);
+///
+/// let mut iter = nclist.into_iter();
+/// assert_eq!(iter.next().unwrap().value, 1..2);
+/// ```
 #[derive(Debug)]
 pub struct IterElement<R, T>
 where
@@ -364,6 +379,23 @@ where
     R: RangeBounds<T>,
     T: Ord,
 {
+    /// Returns an [`Iter`] [`Iterator`] over this element's sublist.
+    ///
+    /// Note that this method consumes the `IterElement`.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
+    ///
+    /// let mut iter = nclist.into_iter();
+    /// let mut sublist = iter.next().unwrap().sublist();
+    /// assert_eq!(sublist.next().unwrap().value, 2..3);
+    /// ```
+    ///
+    /// [`Iterator`]: core::iter::Iterator
     pub fn sublist(self) -> Iter<R, T> {
         Iter {
             elements: self.sublist_elements,
