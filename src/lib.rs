@@ -399,6 +399,13 @@ where
     }
 }
 
+impl<R, T> FusedIterator for Iter<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+}
+
 /// Data structure for efficient storage and querying of [`RangeBounds`].
 ///
 /// # Usage
