@@ -81,6 +81,8 @@
 //! [`Iterator::flatten()`]: core::iter::Iterator::flatten()
 //! [`RangeBounds`]: core::ops::RangeBounds
 
+#![warn(clippy::pedantic)]
+#![allow(clippy::doc_markdown)]
 #![cfg_attr(rustc_1_36, no_std)]
 
 #[cfg(rustc_1_36)]
@@ -183,6 +185,7 @@ where
     /// ```
     ///
     /// [`Iterator`]: core::iter::Iterator
+    #[must_use]
     pub fn sublist(&self) -> Overlapping<'a, R, S, T> {
         Overlapping::new(self.sublist_elements, self.query)
     }
@@ -215,6 +218,7 @@ where
     /// ```
     ///
     /// [`sublist()`]: OverlappingElement::sublist()
+    #[must_use]
     fn into_iter(self) -> Self::IntoIter {
         once(OverlappingElement {
             value: self.value,
@@ -601,6 +605,7 @@ where
     /// ```
     ///
     /// [`Range<usize>`]: core::ops::Range
+    #[must_use]
     pub fn new() -> Self {
         NestedContainmentList {
             elements: Vec::new(),
@@ -623,6 +628,7 @@ where
     ///
     /// nclist.insert(1..2);  // Does not reallocate, since capacity is available.
     /// ```
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         NestedContainmentList {
             elements: Vec::with_capacity(capacity),
@@ -642,6 +648,7 @@ where
     /// nclist.insert(1..5);
     /// assert_eq!(nclist.len(), 1);
     /// ```
+    #[must_use]
     pub fn len(&self) -> usize {
         self.elements.len()
     }
@@ -658,6 +665,7 @@ where
     /// nclist.insert(1..5);
     /// assert!(!nclist.is_empty());
     /// ```
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.elements.is_empty()
     }
@@ -672,6 +680,7 @@ where
     /// let nclist = NestedContainmentList::<Range<usize>, usize>::with_capacity(10);
     /// assert_eq!(nclist.capacity(), 10);
     /// ```
+    #[must_use]
     pub fn capacity(&self) -> usize {
         self.elements.capacity()
     }
@@ -708,6 +717,7 @@ where
     /// ```
     ///
     /// [`Iterator`]: core::iter::Iterator
+    #[must_use]
     pub fn overlapping<'a, S>(&'a self, query: &'a S) -> Overlapping<'a, R, S, T>
     where
         S: RangeBounds<T>,
