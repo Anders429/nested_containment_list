@@ -102,11 +102,10 @@ use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
     cmp::Ordering,
-    iter::{Chain, FromIterator, FusedIterator, Iterator},
+    iter::{Chain, FromIterator, FusedIterator, Iterator, Once, once},
     marker::PhantomData,
     mem,
     ops::RangeBounds,
-    option,
 };
 use nestable::Nestable;
 
@@ -192,7 +191,7 @@ where
     T: Ord,
 {
     type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Overlapping<'a, R, S, T>>;
+    type IntoIter = Chain<Once<Self::Item>, Overlapping<'a, R, S, T>>;
 
     /// Returns the next outer-most element that overlaps the query `Q`.
     ///
@@ -213,13 +212,12 @@ where
     ///
     /// [`sublist()`]: OverlappingElement::sublist()
     fn into_iter(self) -> Self::IntoIter {
-        Some(OverlappingElement {
+        once(OverlappingElement {
             value: self.value,
             sublist_elements: &[],
             query: self.query,
             _marker: PhantomData,
         })
-        .into_iter()
         .chain(self.sublist())
     }
 }
@@ -375,14 +373,13 @@ where
     T: Ord
 {
     type Item = Self;
-    type IntoIter = Chain<option::IntoIter<Self::Item>, Iter<R, T>>;
+    type IntoIter = Chain<Once<Self::Item>, Iter<R, T>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Some(IterElement {
+        once(IterElement {
             value: self.value,
             sublist_elements: Vec::new(),
         })
-        .into_iter()
         .chain(Iter {
             elements: self.sublist_elements,
         })
