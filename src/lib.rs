@@ -81,8 +81,8 @@
 //! [`Iterator::flatten()`]: core::iter::Iterator::flatten()
 //! [`RangeBounds`]: core::ops::RangeBounds
 
-#![warn(clippy::pedantic)]
-#![allow(clippy::doc_markdown)]
+#![warn(clippy::pedantic, clippy::nursery)]
+#![allow(clippy::doc_markdown, clippy::redundant_pub_crate)]
 #![cfg_attr(rustc_1_36, no_std)]
 
 #[cfg(rustc_1_36)]
@@ -220,7 +220,7 @@ where
     /// [`sublist()`]: OverlappingElement::sublist()
     #[must_use]
     fn into_iter(self) -> Self::IntoIter {
-        once(OverlappingElement {
+        once(Self {
             value: self.value,
             sublist_elements: &[],
             query: self.query,
@@ -435,7 +435,7 @@ where
     ///
     /// [`Iterator`]: core::iter::Iterator
     fn into_iter(self) -> Self::IntoIter {
-        once(IterElement {
+        once(Self {
             value: self.value,
             sublist_elements: Vec::new(),
         })
@@ -607,7 +607,7 @@ where
     /// [`Range<usize>`]: core::ops::Range
     #[must_use]
     pub fn new() -> Self {
-        NestedContainmentList {
+        Self {
             elements: Vec::new(),
         }
     }
@@ -630,7 +630,7 @@ where
     /// ```
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
-        NestedContainmentList {
+        Self {
             elements: Vec::with_capacity(capacity),
         }
     }
@@ -913,7 +913,7 @@ where
             elements[sublist_index].sublist_len = len;
         }
 
-        NestedContainmentList { elements }
+        Self { elements }
     }
 }
 
@@ -977,7 +977,7 @@ where
             elements[sublist_index].sublist_len = len;
         }
 
-        NestedContainmentList { elements }
+        Self { elements }
     }
 }
 
