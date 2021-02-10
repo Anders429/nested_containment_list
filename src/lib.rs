@@ -7,7 +7,7 @@
 //! ## Construction
 //!
 //! Construction of [`NestedContainmentList`]s can be done using either the [`new()`] or
-//! [`from_slice()`] methods. Construction from `from_slice()` has temporal complexity
+//! [`from_iter()`] methods. Construction from `from_iter()` has temporal complexity
 //! *O(n log(n))*, where *n* is the length of the slice.
 //!
 //! ```
@@ -76,7 +76,7 @@
 //! the use of [`alloc`](https://doc.rust-lang.org/alloc/index.html), allowing for heap allocation
 //! without use of [`std`](https://doc.rust-lang.org/std/).
 //!
-//! [`from_slice()`]: NestedContainmentList::from_slice()
+//! [`from_iter()`]: NestedContainmentList::from_iter()
 //! [`new()`]: NestedContainmentList::new()
 //! [`overlapping()`]: NestedContainmentList::overlapping()
 //! [`Iterator`]: core::iter::Iterator
@@ -1282,26 +1282,6 @@ mod tests {
 
         assert_eq!(overlapping.next().unwrap().value, &(1..4));
         assert_none!(overlapping.next());
-    }
-
-    #[test]
-    fn from_slice() {
-        let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
-
-        let mut sublist = nclist.overlapping(&(..));
-        let first_sublist_element = sublist.next().unwrap();
-        assert_eq!(first_sublist_element.value, &(1..5));
-        let mut first_sublist_element_sublist = first_sublist_element.sublist();
-        let second_sublist_element = first_sublist_element_sublist.next().unwrap();
-        assert_eq!(second_sublist_element.value, &(2..4));
-        let mut second_sublist_element_sublist = second_sublist_element.sublist();
-        assert_eq!(
-            second_sublist_element_sublist.next().unwrap().value,
-            &(3..4)
-        );
-        assert_none!(first_sublist_element_sublist.next());
-        assert_eq!(sublist.next().unwrap().value, &(6..7));
-        assert_none!(sublist.next());
     }
 
     #[test]
