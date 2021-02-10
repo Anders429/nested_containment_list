@@ -347,12 +347,20 @@ where
 {
 }
 
-pub struct IterElement<R, T> where R: RangeBounds<T>, T: Ord {
+pub struct IterElement<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
     pub value: R,
     sublist_elements: Vec<Element<R, T>>,
 }
 
-impl<R, T> IterElement<R, T> where R:RangeBounds<T>, T: Ord {
+impl<R, T> IterElement<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
     pub fn sublist(self) -> Iter<R, T> {
         Iter {
             elements: self.sublist_elements,
@@ -371,7 +379,7 @@ where
 impl<R, T> Iterator for Iter<R, T>
 where
     R: RangeBounds<T>,
-    T: Ord
+    T: Ord,
 {
     type Item = IterElement<R, T>;
 
@@ -852,9 +860,11 @@ where
     }
 }
 
-impl<R, T> IntoIterator for NestedContainmentList<R, T> 
-where R: RangeBounds<T>,
-T: Ord{
+impl<R, T> IntoIterator for NestedContainmentList<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
     type Item = IterElement<R, T>;
     type IntoIter = Iter<R, T>;
 
