@@ -83,7 +83,7 @@
 //! [`Iterator::flatten()`]: core::iter::Iterator::flatten()
 //! [`RangeBounds`]: core::ops::RangeBounds
 
-#![warn(clippy::pedantic, clippy::nursery)]
+#![warn(clippy::cargo, clippy::nursery, clippy::pedantic)]
 #![allow(clippy::doc_markdown, clippy::redundant_pub_crate)]
 #![cfg_attr(rustc_1_36, no_std)]
 
