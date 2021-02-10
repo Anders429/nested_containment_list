@@ -129,7 +129,7 @@ where
 /// An element contained within an [`Overlapping`].
 ///
 /// This element allows access to its contained value `I` and its sub-elements which also overlap
-/// with the query `Q`.
+/// with the query `S`.
 ///
 /// An `OverlappingElement` is usually obtained from iterating over an `Overlapping`.
 ///
@@ -200,24 +200,26 @@ where
     type Item = Self;
     type IntoIter = Chain<Once<Self::Item>, Overlapping<'a, R, S, T>>;
 
-    /// Returns the next outer-most element that overlaps the query `Q`.
+    /// Returns an [`Iterator`] over this element's `value`, followed by its `sublist()` elements
+    /// that overlap with the query `S`.
     ///
-    /// Note that any values contained within a returned element must be accessed through the
-    /// element's [`sublist()`] method.
+    /// This is useful if you want to iterate over all values including the enclosing value.
     ///
     /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
     ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5]);
-    /// let query = 2..4;
-    /// let mut overlapping = nclist.overlapping(&query);
+    /// let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
+    /// let mut overlapping = nclist.overlapping(&(2..5));
+    /// let first_element = overlapping.next().unwrap();
+    /// let mut first_element_iter = first_element.into_iter();
     ///
-    /// assert_eq!(overlapping.next().unwrap().value, &(1..5));
-    /// assert!(overlapping.next().is_none());
+    /// assert_eq!(first_element_iter.next().unwrap().value, &(1..4));
+    /// assert_eq!(first_element_iter.next().unwrap().value, &(2..3));
     /// ```
     ///
-    /// [`sublist()`]: OverlappingElement::sublist()
+    /// [`Iterator`]: core::iter::Iterator
     #[must_use]
     fn into_iter(self) -> Self::IntoIter {
         once(Self {
