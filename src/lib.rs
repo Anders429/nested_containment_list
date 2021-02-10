@@ -347,6 +347,7 @@ where
 {
 }
 
+#[derive(Debug)]
 pub struct IterElement<R, T>
 where
     R: RangeBounds<T>,
@@ -1257,5 +1258,22 @@ mod tests {
         assert_none!(first_sublist_element_sublist.next());
         assert_eq!(sublist.next().unwrap().value, &(6..7));
         assert_none!(sublist.next());
+    }
+
+    #[test]
+    fn into_iter() {
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
+
+        let mut iter = nclist.into_iter();
+        let first_sublist_element = iter.next().unwrap();
+        assert_eq!(first_sublist_element.value, 1..5);
+        let mut first_sublist_element_sublist = first_sublist_element.sublist();
+        let second_sublist_element = first_sublist_element_sublist.next().unwrap();
+        assert_eq!(second_sublist_element.value, 2..4);
+        let mut second_sublist_element_sublist = second_sublist_element.sublist();
+        assert_eq!(second_sublist_element_sublist.next().unwrap().value, 3..4);
+        assert_none!(first_sublist_element_sublist.next());
+        assert_eq!(iter.next().unwrap().value, 6..7);
+        assert_none!(iter.next());
     }
 }
