@@ -19,8 +19,9 @@
 //!
 //! ```
 //! use nested_containment_list::NestedContainmentList;
+//! use std::iter::FromIterator;
 //!
-//! let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
+//! let nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 5..7]);
 //! ```
 //!
 //! ## Mutation
@@ -49,8 +50,9 @@
 //!
 //! ```
 //! use nested_containment_list::NestedContainmentList;
+//! use std::iter::FromIterator;
 //!
-//! let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 6..7]);
+//! let nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 6..7]);
 //! let mut sublist = nclist.overlapping(&(..));
 //!
 //! // The first element in the top-most sublist, 1..5.
@@ -136,8 +138,9 @@ where
 /// # Example
 /// ```
 /// use nested_containment_list::NestedContainmentList;
+/// use std::iter::FromIterator;
 ///
-/// let nclist = NestedContainmentList::from_slice(&[1..4, 2..3]);
+/// let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
 /// let query = 2..4;
 /// let mut overlapping = nclist.overlapping(&query);
 ///
@@ -171,8 +174,9 @@ where
     /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
     ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 3..4]);
+    /// let nclist = NestedContainmentList::from_iter(vec![1..5, 2..3, 3..4]);
     /// let query = 2..4;
     /// let mut overlapping = nclist.overlapping(&query);
     ///
@@ -243,8 +247,9 @@ where
 /// # Example
 /// ```
 /// use nested_containment_list::NestedContainmentList;
+/// use std::iter::FromIterator;
 ///
-/// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 2..4, 5..7]);
+/// let nclist = NestedContainmentList::from_iter(vec![1..5, 2..3, 2..4, 5..7]);
 /// let query = 3..6;
 /// let mut overlapping = nclist.overlapping(&query);
 ///
@@ -312,8 +317,9 @@ where
     /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
     ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5]);
+    /// let nclist = NestedContainmentList::from_iter(vec![1..5]);
     /// let query = 2..3;
     /// let mut overlapping = nclist.overlapping(&query);
     ///
@@ -539,8 +545,9 @@ where
 ///
 /// ```
 /// use nested_containment_list::NestedContainmentList;
+/// use std::iter::FromIterator;
 ///
-/// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
+/// let mut nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 5..7]);
 /// ```
 ///
 /// ## Data Access
@@ -562,8 +569,9 @@ where
 ///
 /// ```
 /// use nested_containment_list::NestedContainmentList;
+/// use std::iter::FromIterator;
 ///
-/// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 5..7]);
+/// let mut nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 5..7]);
 ///
 /// // Creates a Sublist Iterator.
 /// let mut sublist = nclist.overlapping(&(..));
@@ -698,8 +706,9 @@ where
     /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
     ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..3, 2..4, 5..7]);
+    /// let nclist = NestedContainmentList::from_iter(vec![1..5, 2..3, 2..4, 5..7]);
     /// let query = 3..6;
     /// let mut overlapping = nclist.overlapping(&query);
     ///
@@ -810,8 +819,9 @@ where
     /// # Example
     /// ```
     /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
     ///
-    /// let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4]);
+    /// let mut nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 3..4]);
     /// assert!(nclist.remove(&(2..4)));
     /// ```
     pub fn remove<Q>(&mut self, value: &Q) -> bool
@@ -855,67 +865,6 @@ where
         }
 
         false
-    }
-}
-
-impl<R, T> NestedContainmentList<R, T>
-where
-    R: RangeBounds<T> + Clone,
-    T: Ord,
-{
-    /// Construct a `NestedContainmentList` from a slice.
-    ///
-    /// The elements within the slice are cloned into the new `NestedContainmentList`.
-    ///
-    /// This construction has temporal complexity of *O(n log(n))*, where *n* is the length of the
-    /// slice. If you already have a collection of [`RangeBounds`] that you wish to use to create a
-    /// `NestedContainmentList`, this is likely the most efficient way to do so.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4, 5..7]);
-    /// ```
-    pub fn from_slice(values: &[R]) -> Self {
-        // Sort the elements.
-        let mut values = values.to_vec();
-        values.sort_unstable_by(Nestable::ordering);
-
-        // Depth-first construction.
-        let mut elements: Vec<Element<R, T>> = Vec::with_capacity(values.len());
-        let mut sublist_indices: Vec<usize> = Vec::with_capacity(values.len());
-        for index in 0..values.len() {
-            let value = values.remove(0);
-            while !sublist_indices.is_empty() {
-                let sublist_index = sublist_indices.pop().unwrap();
-
-                if Nestable::contains(&elements[sublist_index].value, &value) {
-                    // We are within the previous sublist.
-                    sublist_indices.push(sublist_index);
-                    break;
-                } else {
-                    // We are no longer within the previous sublist.
-                    let len = index - sublist_index - 1;
-                    elements[sublist_index].sublist_len = len;
-                }
-            }
-
-            sublist_indices.push(index);
-            elements.push(Element {
-                value,
-                sublist_len: 0,
-                _marker: PhantomData,
-            });
-        }
-
-        // Clean up remaining sublist indices.
-        for sublist_index in sublist_indices {
-            let len = elements.len() - sublist_index - 1;
-            elements[sublist_index].sublist_len = len;
-        }
-
-        Self { elements }
     }
 }
 
@@ -1064,7 +1013,7 @@ mod tests {
 
     #[test]
     fn is_not_empty() {
-        assert!(!NestedContainmentList::from_slice(&[1..2]).is_empty());
+        assert!(!NestedContainmentList::from_iter(vec![1..2]).is_empty());
     }
 
     #[test]
@@ -1189,7 +1138,7 @@ mod tests {
 
     #[test]
     fn insert_into_second_sublist() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..4, 2..3, 5..9]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..4, 2..3, 5..9]);
 
         nclist.insert(6..8);
 
@@ -1210,21 +1159,21 @@ mod tests {
 
     #[test]
     fn remove() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..5]);
 
         assert!(nclist.remove(&(1..5)));
     }
 
     #[test]
     fn remove_not_found() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5, 6..7]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..5, 6..7]);
 
         assert!(!nclist.remove(&(1..4)));
     }
 
     #[test]
     fn remove_contained() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..5, 2..4]);
 
         assert!(nclist.remove(&(2..4)));
 
@@ -1237,7 +1186,7 @@ mod tests {
 
     #[test]
     fn remove_containing() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5, 0..6]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..5, 0..6]);
 
         assert!(nclist.remove(&(0..6)));
 
@@ -1250,7 +1199,7 @@ mod tests {
 
     #[test]
     fn remove_contained_and_containing() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 3..4]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 3..4]);
 
         assert!(nclist.remove(&(2..4)));
 
@@ -1265,14 +1214,14 @@ mod tests {
 
     #[test]
     fn remove_from_second_sublist() {
-        let mut nclist = NestedContainmentList::from_slice(&[1..5, 2..4, 6..7]);
+        let mut nclist = NestedContainmentList::from_iter(vec![1..5, 2..4, 6..7]);
 
         assert!(nclist.remove(&(6..7)));
     }
 
     #[test]
     fn overlapping() {
-        let nclist = NestedContainmentList::from_slice(&[1..5, 3..4, 2..4, 6..7]);
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
 
         let query = 4..7;
         let mut overlapping = nclist.overlapping(&query);
@@ -1288,7 +1237,7 @@ mod tests {
 
     #[test]
     fn overlapping_skip_first() {
-        let nclist = NestedContainmentList::from_slice(&[1..2, 3..4]);
+        let nclist = NestedContainmentList::from_iter(vec![1..2, 3..4]);
 
         let query = 3..4;
         let mut overlapping = nclist.overlapping(&query);
@@ -1301,7 +1250,7 @@ mod tests {
 
     #[test]
     fn overlapping_contained() {
-        let nclist = NestedContainmentList::from_slice(&[1..5]);
+        let nclist = NestedContainmentList::from_iter(vec![1..5]);
 
         let query = 2..3;
         let mut overlapping = nclist.overlapping(&query);
@@ -1314,7 +1263,7 @@ mod tests {
 
     #[test]
     fn overlapping_starts_at_topmost_element() {
-        let nclist = NestedContainmentList::from_slice(&[1..4, 2..3]);
+        let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
         let query = 2..4;
         let mut overlapping = nclist.overlapping(&query);
 
@@ -1327,7 +1276,7 @@ mod tests {
 
     #[test]
     fn overlapping_stops_early() {
-        let nclist = NestedContainmentList::from_slice(&[1..4, 2..5]);
+        let nclist = NestedContainmentList::from_iter(vec![1..4, 2..5]);
         let query = 1..2;
         let mut overlapping = nclist.overlapping(&query);
 
@@ -1337,7 +1286,7 @@ mod tests {
 
     #[test]
     fn from_slice() {
-        let nclist = NestedContainmentList::from_slice(&[1..5, 3..4, 2..4, 6..7]);
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
 
         let mut sublist = nclist.overlapping(&(..));
         let first_sublist_element = sublist.next().unwrap();
