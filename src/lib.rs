@@ -411,6 +411,25 @@ where
     type Item = Self;
     type IntoIter = Chain<Once<Self::Item>, Iter<R, T>>;
 
+    /// Returns an [`Iterator`] over this element's `value`, followed by its `sublist()`.
+    ///
+    /// This is useful if you want to iterate over all values including the enclosing value.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
+    /// let mut iter = nclist.into_iter();
+    /// let first_element = iter.next().unwrap();
+    /// let mut first_element_iter = first_element.into_iter();
+    ///
+    /// assert_eq!(first_element_iter.next().unwrap().value, 1..4);
+    /// assert_eq!(first_element_iter.next().unwrap().value, 2..3);
+    /// ``` 
+    ///
+    /// [`Iterator`]: core::iter::Iterator
     fn into_iter(self) -> Self::IntoIter {
         once(IterElement {
             value: self.value,
