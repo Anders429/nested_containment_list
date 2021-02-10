@@ -361,7 +361,7 @@ where
 {
 }
 
-/// An element obtained from `Iter`.
+/// An element obtained from [`Iter`].
 ///
 /// This element allows access to its `value`, as well as providing an `Iterator` over all values
 /// nested within `value` through the `sublist()` method.
@@ -453,7 +453,7 @@ where
     }
 }
 
-/// An [`Iterator`] over all elements in a `NestedContainmentList`.
+/// An [`Iterator`] over all elements in a [`NestedContainmentList`].
 ///
 /// This `Iterator` proceeds in a nested fashion, meaning it only yields the outer-most nested
 /// elements. To access the inner elements, call [`sublist()`] on the outer elements.
