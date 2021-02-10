@@ -109,6 +109,10 @@ use core::{
 };
 use nestable::Nestable;
 
+/// Internal element, stored within the `NestedContainmentList` and its associated `Iterators`.
+///
+/// The values in here are more directly used in the external API's `OverlappingElement` and
+/// `IterElement` types.
 #[derive(Debug)]
 struct Element<R, T>
 where
