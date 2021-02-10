@@ -369,6 +369,26 @@ where
     }
 }
 
+impl<R, T> IntoIterator for IterElement<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord
+{
+    type Item = Self;
+    type IntoIter = Chain<option::IntoIter<Self::Item>, Iter<R, T>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Some(IterElement {
+            value: self.value,
+            sublist_elements: Vec::new(),
+        })
+        .into_iter()
+        .chain(Iter {
+            elements: self.sublist_elements,
+        })
+    }
+}
+
 pub struct Iter<R, T>
 where
     R: RangeBounds<T>,
