@@ -441,6 +441,25 @@ where
     }
 }
 
+/// An [`Iterator`] over all elements in a `NestedContainmentList`.
+///
+/// This `Iterator` proceeds in a nested fashion, meaning it only yields the outer-most nested
+/// elements. To access the inner elements, call [`sublist()`] on the outer elements.
+///
+/// # Example
+///
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+/// use std::iter::FromIterator;
+///
+/// let nclist = NestedContainmentList::from_iter(vec![1..2]);
+///
+/// let mut iter = nclist.into_iter();
+/// assert_eq!(iter.next().unwrap().value, 1..2);
+/// ``` 
+///
+/// [`Iterator`]: core::iter::Iterator
+/// [`sublist()`]: IterElement::sublist()
 pub struct Iter<R, T>
 where
     R: RangeBounds<T>,
@@ -456,6 +475,18 @@ where
 {
     type Item = IterElement<R, T>;
 
+    /// Yield the next outer-most element.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..2]);
+    ///
+    /// let mut iter = nclist.into_iter();
+    /// assert_eq!(iter.next().unwrap().value, 1..2);
+    /// ``` 
     fn next(&mut self) -> Option<Self::Item> {
         if self.elements.is_empty() {
             return None;
