@@ -104,6 +104,7 @@ use core::{
     cmp::Ordering,
     iter::{Chain, FromIterator, FusedIterator, Iterator},
     marker::PhantomData,
+    mem,
     ops::RangeBounds,
     option,
 };
@@ -344,6 +345,42 @@ where
     S: RangeBounds<T>,
     T: Ord,
 {
+}
+
+pub struct IterElement<R, T> where R: RangeBounds<T>, T: Ord {
+    pub value: R,
+    sublist_elements: Vec<Element<R, T>>,
+}
+
+pub struct Iter<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    elements: Vec<Element<R, T>>,
+}
+
+impl<R, T> Iterator for Iter<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord
+{
+    type Item = IterElement<R, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.elements.is_empty() {
+            return None;
+        }
+        // TODO: Is there a more efficient way to do this without moving all elements left?
+        // Perhaps reversing the Vec on creation?
+        let element = self.elements.remove(0);
+        let remaining_elements = self.elements.split_off(element.sublist_len);
+
+        Some(IterElement {
+            value: element.value,
+            sublist_elements: mem::replace(&mut self.elements, remaining_elements),
+        })
+    }
 }
 
 /// Data structure for efficient storage and querying of [`RangeBounds`].
@@ -804,6 +841,19 @@ where
         }
 
         NestedContainmentList { elements }
+    }
+}
+
+impl<R, T> IntoIterator for NestedContainmentList<R, T> 
+where R: RangeBounds<T>,
+T: Ord{
+    type Item = IterElement<R, T>;
+    type IntoIter = Iter<R, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter {
+            elements: self.elements,
+        }
     }
 }
 
