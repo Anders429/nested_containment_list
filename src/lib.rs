@@ -353,7 +353,15 @@ where
             self.index += element.sublist_len + 1;
             Some(OverlappingElement {
                 value: &element.value,
-                sublist_elements: &self.elements[(current_index + 1)..self.index],
+                sublist_elements: unsafe {
+                    // SAFETY: The range used to index will never be out of bounds. `current_index`
+                    // is guaranteed to be less than `self.elements.len()`, and the new `self.index`
+                    // is guaranteed, by the `NestedContainmentList`'s invariants, to be less than
+                    // or equal to `self.elements.len()`, because
+                    // `self_index += element.sublist_len` will never increment past
+                    // `self.elements.len()`.
+                    self.elements.get_unchecked((current_index + 1)..self.index)
+                },
                 query: self.query,
                 _marker: PhantomData,
             })
