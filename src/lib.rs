@@ -342,7 +342,11 @@ where
         }
         let current_index = self.index;
         // Next element.
-        let element = &self.elements[self.index];
+        let element = unsafe {
+            // SAFETY: Since `self.index` is always less than `self.elements.len()`, this usage of
+            // `get_unchecked()` is always safe.
+            self.elements.get_unchecked(self.index)
+        };
 
         if element.value.overlapping(self.query) {
             // Skip over element's sublist.
