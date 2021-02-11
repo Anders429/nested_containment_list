@@ -290,8 +290,16 @@ where
     fn new(elements: &'a [Element<R, T>], query: &'a S) -> Self {
         // Find the index of the first overlapping interval in the top-most sublist.
         let mut index = 0;
-        while index < elements.len() && !elements[index].value.overlapping(query) {
-            index += elements[index].sublist_len + 1;
+        while index < elements.len() {
+            let element = unsafe {
+                // SAFETY: Since `index` is always less than `elements.len()`, this
+                // `get_unchecked()` usage will always be safe.
+                elements.get_unchecked(index)
+            };
+            if element.value.overlapping(query) {
+                break;
+            }
+            index += element.sublist_len + 1;
         }
         Overlapping {
             index,
