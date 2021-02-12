@@ -790,7 +790,16 @@ where
                     // Find the length of the value's sublist.
                     let mut len = 0;
                     for inner_index in index..self.elements.len() {
-                        if Nestable::contains(&value, &self.elements[inner_index].value) {
+                        if Nestable::contains(
+                            &value,
+                            &unsafe {
+                                // SAFETY: `inner_index` is guaranteed to be less than
+                                // `self.elements.len()`, due to being obtained from the range
+                                // `index..self.elements.len()`.
+                                self.elements.get_unchecked(inner_index)
+                            }
+                            .value,
+                        ) {
                             len += 1;
                         } else {
                             break;
