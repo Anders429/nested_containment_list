@@ -859,7 +859,8 @@ where
                 // due to `sublist_indices` only consisting of `index` values (which are also
                 // guaranteed to be within the bounds; see safety notes above).
                 self.elements.get_unchecked_mut(sublist_index)
-            }.sublist_len += 1;
+            }
+            .sublist_len += 1;
         }
     }
 
@@ -885,13 +886,27 @@ where
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
         let mut indices = 0..self.elements.len();
         while let Some(index) = indices.next() {
-            match value.ordering(&self.elements[index].value) {
+            match value.ordering(
+                &unsafe {
+                    // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to
+                    // being obtained from the range `0..self.elements.len()`.
+                    self.elements.get_unchecked(index)
+                }
+                .value,
+            ) {
                 // If the value is nestably equal to this element, remove it.
                 Ordering::Equal => {
                     self.elements.remove(index);
                     // Shorten the sublist of every parent element.
                     for sublist_index in sublist_indices {
-                        self.elements[sublist_index].sublist_len -= 1;
+                        unsafe {
+                            // SAFETY: `sublist_index` is guaranteed to be within the bounds of
+                            // `self.elements`, due to `sublist_indices` only consisting of `index`
+                            // values (which are also guaranteed to be within the bounds; see
+                            // safety notes above).
+                            self.elements.get_unchecked_mut(sublist_index)
+                        }
+                        .sublist_len -= 1;
                     }
                     // The element is removed. We are done.
                     return true;
@@ -904,7 +919,11 @@ where
                 Ordering::Greater => {}
             }
 
-            let element = &self.elements[index];
+            let element = unsafe {
+                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
+                // obtained from the range `0..self.elements.len()`.
+                self.elements.get_unchecked(index)
+            };
             if Nestable::contains(&element.value, value) {
                 // Proceed down this element's path.
                 sublist_indices.push(index);
