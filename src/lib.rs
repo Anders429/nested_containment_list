@@ -106,6 +106,7 @@ use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
     cmp::Ordering,
+    hint::unreachable_unchecked,
     iter::{once, Chain, FromIterator, FusedIterator, Iterator, Once},
     marker::PhantomData,
     mem,
@@ -972,7 +973,13 @@ where
         for index in 0..values.len() {
             let value = values.remove(0);
             while !sublist_indices.is_empty() {
-                let sublist_index = sublist_indices.pop().unwrap();
+                let sublist_index = sublist_indices.pop().unwrap_or_else(|| {
+                    if cfg!(debug_assertions) {
+                        unreachable!()
+                    } else {
+                        unsafe { unreachable_unchecked() }
+                    }
+                });
 
                 let mut sublist_element = unsafe {
                     // SAFETY: `sublist_index` is always guaranteed to be less than the current
@@ -980,11 +987,7 @@ where
                     // is guaranteed to be within the bounds of `elements`.
                     elements.get_unchecked_mut(sublist_index)
                 };
-                if Nestable::contains(
-                    &sublist_element
-                    .value,
-                    &value,
-                ) {
+                if Nestable::contains(&sublist_element.value, &value) {
                     // We are within the previous sublist.
                     sublist_indices.push(sublist_index);
                     break;
