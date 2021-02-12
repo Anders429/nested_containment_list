@@ -815,7 +815,14 @@ where
                     );
                     // Lengthen the sublist of every parent element.
                     for sublist_index in sublist_indices {
-                        self.elements[sublist_index].sublist_len += 1;
+                        unsafe {
+                            // SAFETY: `sublist_index` is guaranteed to be within the bounds of
+                            // `self.elements`, due to `sublist_indices` only consisting of `index`
+                            // values (which are also guaranteed to be within the bounds; see
+                            // safety notes above).
+                            self.elements.get_unchecked_mut(sublist_index)
+                        }
+                        .sublist_len += 1;
                     }
                     // The element is inserted. We are done.
                     return;
