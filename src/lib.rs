@@ -991,11 +991,10 @@ where
                     // We are within the previous sublist.
                     sublist_indices.push(sublist_index);
                     break;
-                } else {
-                    // We are no longer within the previous sublist.
-                    let len = index - sublist_index - 1;
-                    sublist_element.sublist_len = len;
                 }
+                // We are no longer within the previous sublist.
+                let len = index - sublist_index - 1;
+                sublist_element.sublist_len = len;
             }
 
             sublist_indices.push(index);
