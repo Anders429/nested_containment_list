@@ -974,14 +974,24 @@ where
             while !sublist_indices.is_empty() {
                 let sublist_index = sublist_indices.pop().unwrap();
 
-                if Nestable::contains(&elements[sublist_index].value, &value) {
+                let mut sublist_element = unsafe {
+                    // SAFETY: `sublist_index` is always guaranteed to be less than the current
+                    // `index`, and since we push a new element with every `index`, `sublist_index`
+                    // is guaranteed to be within the bounds of `elements`.
+                    elements.get_unchecked_mut(sublist_index)
+                };
+                if Nestable::contains(
+                    &sublist_element
+                    .value,
+                    &value,
+                ) {
                     // We are within the previous sublist.
                     sublist_indices.push(sublist_index);
                     break;
                 } else {
                     // We are no longer within the previous sublist.
                     let len = index - sublist_index - 1;
-                    elements[sublist_index].sublist_len = len;
+                    sublist_element.sublist_len = len;
                 }
             }
 
@@ -996,7 +1006,14 @@ where
         // Clean up remaining sublist indices.
         for sublist_index in sublist_indices {
             let len = elements.len() - sublist_index - 1;
-            elements[sublist_index].sublist_len = len;
+            unsafe {
+                // SAFETY: Since we have iterated through every `index`, then `elements` is the same
+                // length as `values`. Since each `sublist_index` is an index less than
+                // `values.len()`, each `sublist_index` will always be within the bounds of
+                // `elements`.
+                elements.get_unchecked_mut(sublist_index)
+            }
+            .sublist_len = len;
         }
 
         Self { elements }
