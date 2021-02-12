@@ -780,8 +780,8 @@ where
             // before this element.
             match value.ordering(
                 &unsafe {
-                    // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
-                    // obtained from the range `0..self.elements.len()`.
+                    // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to
+                    // being obtained from the range `0..self.elements.len()`.
                     self.elements.get_unchecked(index)
                 }
                 .value,
@@ -814,7 +814,11 @@ where
                 _ => {}
             }
 
-            let element = &self.elements[index];
+            let element = unsafe {
+                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
+                // obtained from the range `0..self.elements.len()`.
+                self.elements.get_unchecked(index)
+            };
             if Nestable::contains(&element.value, &value) {
                 // Proceed down this element's path.
                 sublist_indices.push(index);
