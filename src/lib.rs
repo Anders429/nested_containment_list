@@ -1422,4 +1422,15 @@ mod tests {
         assert_eq!(iter.next().unwrap().value, 6..7);
         assert_none!(iter.next());
     }
+
+    #[test]
+    fn iter_element_into_iter() {
+        let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
+        let mut iter = nclist.into_iter();
+        let first_element = iter.next().unwrap();
+        let mut first_element_iter = first_element.into_iter();
+        
+        assert_eq!(first_element_iter.next().unwrap().value, 1..4);
+        assert_eq!(first_element_iter.next().unwrap().value, 2..3);
+    }
 }
