@@ -778,7 +778,14 @@ where
         while let Some(index) = indices.next() {
             // If the value is ordered less than or equal to this element, then insert the value
             // before this element.
-            match value.ordering(&self.elements[index].value) {
+            match value.ordering(
+                &unsafe {
+                    // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
+                    // obtained from the range `0..self.elements.len()`.
+                    self.elements.get_unchecked(index)
+                }
+                .value,
+            ) {
                 Ordering::Less | Ordering::Equal => {
                     // Find the length of the value's sublist.
                     let mut len = 0;
