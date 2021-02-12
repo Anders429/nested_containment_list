@@ -1376,6 +1376,17 @@ mod tests {
     }
 
     #[test]
+    fn overlapping_element_into_iter() {
+        let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3]);
+        let mut overlapping = nclist.overlapping(&(2..5));
+        let first_element = overlapping.next().unwrap();
+        let mut first_element_iter = first_element.into_iter();
+        
+        assert_eq!(first_element_iter.next().unwrap().value, &(1..4));
+        assert_eq!(first_element_iter.next().unwrap().value, &(2..3));
+    }
+
+    #[test]
     fn from_iter() {
         let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
 
