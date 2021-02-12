@@ -1,6 +1,6 @@
 [package]
 name = "nested_containment_list"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Anders Evensen"]
 description = "A data structure for efficiently storing and querying nested intervals."
 readme = "README.md"
