@@ -105,7 +105,7 @@ mod nestable;
 use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
-    cmp::Ordering,
+    cmp::{min, Ordering},
     hint::unreachable_unchecked,
     iter::{once, Chain, FromIterator, FusedIterator, Iterator, Once},
     marker::PhantomData,
@@ -371,6 +371,29 @@ where
             self.index = self.elements.len();
             None
         }
+    }
+
+    /// Returns the bounds on the remaining length of the iterator.
+    ///
+    /// The lower bound will always be `1` unless the iterator has been exhausted, in which case it
+    /// will be `0`. The upper bound will always be provided and will be the total count of
+    /// remaining elements to be iterated over, including those which are nested and those which may
+    /// not actually overlap with the query.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..5, 2..5, 6..7]);
+    /// let query = 2..4;
+    /// let overlapping = nclist.overlapping(&query);
+    ///
+    /// assert_eq!(overlapping.size_hint(), (1, Some(3)));
+    /// ```
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining_len = self.elements.len() - self.index;
+        (min(1, remaining_len), Some(remaining_len))
     }
 }
 
@@ -1372,6 +1395,34 @@ mod tests {
 
         assert_eq!(overlapping.next().unwrap().value, &(1..4));
         assert_none!(overlapping.next());
+    }
+
+    #[test]
+    fn overlapping_size_hint() {
+        let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3, 4..7]);
+        let query = 1..3;
+        let overlapping = nclist.overlapping(&query);
+
+        assert_eq!(overlapping.size_hint(), (1, Some(3)));
+    }
+
+    #[test]
+    fn overlapping_size_hint_empty() {
+        let nclist = NestedContainmentList::<Range<usize>, usize>::new();
+        let query = 1..3;
+        let overlapping = nclist.overlapping(&query);
+
+        assert_eq!(overlapping.size_hint(), (0, Some(0)));
+    }
+
+    #[test]
+    fn overlapping_size_hint_after_iterating() {
+        let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3, 4..7]);
+        let query = 1..5;
+        let mut overlapping = nclist.overlapping(&query);
+        overlapping.next();
+
+        assert_eq!(overlapping.size_hint(), (1, Some(1)));
     }
 
     #[test]
