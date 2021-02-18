@@ -102,7 +102,10 @@ extern crate more_ranges;
 
 mod nestable;
 
-use alloc::vec::Vec;
+use alloc::{
+    collections::VecDeque,
+    vec::Vec
+};
 use core::{
     borrow::Borrow,
     cmp::{min, Ordering},
@@ -427,7 +430,7 @@ where
     T: Ord,
 {
     pub value: R,
-    sublist_elements: Vec<Element<R, T>>,
+    sublist_elements: VecDeque<Element<R, T>>,
 }
 
 impl<R, T> IterElement<R, T>
@@ -489,7 +492,7 @@ where
     fn into_iter(self) -> Self::IntoIter {
         once(Self {
             value: self.value,
-            sublist_elements: Vec::new(),
+            sublist_elements: VecDeque::new(),
         })
         .chain(Iter {
             elements: self.sublist_elements,
@@ -521,7 +524,7 @@ where
     R: RangeBounds<T>,
     T: Ord,
 {
-    elements: Vec<Element<R, T>>,
+    elements: VecDeque<Element<R, T>>,
 }
 
 impl<R, T> Iterator for Iter<R, T>
@@ -547,11 +550,8 @@ where
         if self.elements.is_empty() {
             return None;
         }
-        // TODO: Is there a more efficient way to do this without moving all elements left?
-        // Perhaps reversing the Vec on creation?
-        // Note: https://github.com/rust-lang/rust/issues/27322#issuecomment-589915480 indicates we
-        // can use VecDeque::From<Vec> with no extra allocation.
-        let element = self.elements.remove(0);
+        
+        let element = self.elements.pop_front().unwrap();
         let remaining_elements = self.elements.split_off(element.sublist_len);
 
         Some(IterElement {
@@ -1077,7 +1077,7 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         Iter {
-            elements: self.elements,
+            elements: VecDeque::from(self.elements),
         }
     }
 }
