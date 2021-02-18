@@ -549,6 +549,8 @@ where
         }
         // TODO: Is there a more efficient way to do this without moving all elements left?
         // Perhaps reversing the Vec on creation?
+        // Note: https://github.com/rust-lang/rust/issues/27322#issuecomment-589915480 indicates we
+        // can use VecDeque::From<Vec> with no extra allocation.
         let element = self.elements.remove(0);
         let remaining_elements = self.elements.split_off(element.sublist_len);
 
@@ -556,6 +558,26 @@ where
             value: element.value,
             sublist_elements: mem::replace(&mut self.elements, remaining_elements),
         })
+    }
+
+    /// Returns the bounds on the remaining length of the iterator.
+    ///
+    /// The lower bound will always be `1` unless the iterator has been exhausted, in which case it
+    /// will be `0`. The upper bound will always be provided and will be the total count of
+    /// remaining elements to be iterated over, including those which are nested.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..5, 2..5, 6..7]);
+    /// let iter = nclist.into_iter();
+    ///
+    /// assert_eq!(iter.size_hint(), (1, Some(3)));
+    /// ```
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (min(1, self.elements.len()), Some(self.elements.len()))
     }
 }
 
@@ -1471,6 +1493,31 @@ mod tests {
         assert_none!(first_sublist_element_sublist.next());
         assert_eq!(iter.next().unwrap().value, 6..7);
         assert_none!(iter.next());
+    }
+
+    #[test]
+    fn iter_size_hint() {
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 2..5, 6..7]);
+        let iter = nclist.into_iter();
+        
+        assert_eq!(iter.size_hint(), (1, Some(3)));
+    }
+
+    #[test]
+    fn iter_size_hint_empty() {
+        let nclist = NestedContainmentList::<Range<usize>, usize>::new();
+        let iter = nclist.into_iter();
+        
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
+
+    #[test]
+    fn iter_size_hint_after_iterating() {
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 2..5, 6..7]);
+        let mut iter = nclist.into_iter();
+        iter.next();
+        
+        assert_eq!(iter.size_hint(), (1, Some(1)));
     }
 
     #[test]
