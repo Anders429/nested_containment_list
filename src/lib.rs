@@ -394,8 +394,7 @@ where
     /// assert_eq!(overlapping.size_hint(), (1, Some(3)));
     /// ```
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining_len = self.elements.len() - self.index;
-        (min(1, remaining_len), Some(remaining_len))
+        (min(1, self.elements.len()), Some(self.elements.len()))
     }
 }
 
