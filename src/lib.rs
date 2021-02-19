@@ -102,10 +102,7 @@ extern crate more_ranges;
 
 mod nestable;
 
-use alloc::{
-    collections::VecDeque,
-    vec::Vec
-};
+use alloc::{collections::VecDeque, vec::Vec};
 use core::{
     borrow::Borrow,
     cmp::{min, Ordering},
@@ -280,7 +277,6 @@ where
     S: RangeBounds<T> + 'a,
     T: Ord + 'a,
 {
-    index: usize,
     elements: &'a [Element<R, T>],
     query: &'a S,
 }
@@ -306,8 +302,13 @@ where
             index += element.sublist_len + 1;
         }
         Overlapping {
-            index,
-            elements,
+            elements: unsafe {
+                // SAFETY: `index` is always less than or equal to `elements.len()`, and therefore
+                // this will never be out of bounds. We can guarantee it is less than or equal to
+                // because adding each `element.sublist_len` will never push the value past
+                // `elements.len()`.
+                elements.get_unchecked(index..)
+            },
             query,
         }
     }
@@ -341,37 +342,35 @@ where
     ///
     /// [`sublist()`]: OverlappingElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.elements.len() {
+        if self.elements.is_empty() {
             return None;
         }
-        let current_index = self.index;
-        // Next element.
-        let element = unsafe {
-            // SAFETY: Since `self.index` is always less than `self.elements.len()`, this usage of
-            // `get_unchecked()` is always safe.
-            self.elements.get_unchecked(self.index)
-        };
 
+        let element = unsafe {
+            // SAFETY: Just checked that `self.elements` has at least one value.
+            self.elements.get_unchecked(0)
+        };
         if element.value.overlapping(self.query) {
-            // Skip over element's sublist.
-            self.index += element.sublist_len + 1;
+            let sublist_elements = unsafe {
+                // SAFETY: `element.sublist_len` is invariantly guaranteed to only advance to a
+                // point within the bounds of `elements`. Therefore, this will never go out of
+                // bounds.
+                self.elements.get_unchecked(1..=element.sublist_len)
+            };
+            self.elements = unsafe {
+                // SAFETY: `element.sublist_len` will invariantly always be less than
+                // `elements.len()`, since the length of a sublist of an element never includes
+                // itself. Therefore, `element.sublist_len + 1 <= elements.len()`.
+                self.elements.get_unchecked((element.sublist_len + 1)..)
+            };
             Some(OverlappingElement {
                 value: &element.value,
-                sublist_elements: unsafe {
-                    // SAFETY: The range used to index will never be out of bounds. `current_index`
-                    // is guaranteed to be less than `self.elements.len()`, and the new `self.index`
-                    // is guaranteed, by the `NestedContainmentList`'s invariants, to be less than
-                    // or equal to `self.elements.len()`, because
-                    // `self_index += element.sublist_len` will never increment past
-                    // `self.elements.len()`.
-                    self.elements.get_unchecked((current_index + 1)..self.index)
-                },
+                sublist_elements,
                 query: self.query,
                 _marker: PhantomData,
             })
         } else {
-            // End iteration, since there will be no more overlaps.
-            self.index = self.elements.len();
+            self.elements = &[];
             None
         }
     }
@@ -395,8 +394,7 @@ where
     /// assert_eq!(overlapping.size_hint(), (1, Some(3)));
     /// ```
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining_len = self.elements.len() - self.index;
-        (min(1, remaining_len), Some(remaining_len))
+        (min(1, self.elements.len()), Some(self.elements.len()))
     }
 }
 
@@ -550,7 +548,7 @@ where
         if self.elements.is_empty() {
             return None;
         }
-        
+
         let element = self.elements.pop_front().unwrap();
         let remaining_elements = self.elements.split_off(element.sublist_len);
 
