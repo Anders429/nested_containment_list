@@ -427,8 +427,15 @@ where
 
             // Check whether the parent element overlaps with query.
             if element.value.overlapping(self.query) {
-                let sublist_elements = unsafe {self.elements.get_unchecked((index + 1)..)};
-                self.elements = unsafe {self.elements.get_unchecked(..index)};
+                let sublist_elements = unsafe {
+                    // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
+                    // this indexing will never be out of bounds.
+                    self.elements.get_unchecked((index + 1)..)};
+                self.elements = unsafe {
+                    // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
+                    // this indexing will never be out of bounds.
+                    self.elements.get_unchecked(..index)
+                };
                 return Some(OverlappingElement {
                     value: &element.value,
                     sublist_elements,
@@ -437,7 +444,11 @@ where
                 });
             } else {
                 // Truncate the elements, since they don't overlap.
-                self.elements = unsafe {self.elements.get_unchecked(..index)};
+                self.elements = unsafe {
+                    // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
+                    // this indexing will never be out of bounds.
+                    self.elements.get_unchecked(..index)
+                };
             }
         }
 
