@@ -396,6 +396,55 @@ where
     }
 }
 
+impl<'a, R, S, T> DoubleEndedIterator for Overlapping<'a, R, S, T>
+where
+    R: RangeBounds<T>,
+    S: RangeBounds<T>,
+    T: Ord,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        while !self.elements.is_empty() {
+            let mut index = self.elements.len() - 1;
+
+            // Find top level parent element.
+            let element = loop {
+                let parent_element = unsafe{
+                    // SAFETY: `index` will always be less than self.elements.len(), since it is set
+                    // to one less than it, and it only ever decreases.
+                    self.elements.get_unchecked(index)
+                };
+                if let Some(offset) = parent_element.parent_offset {
+                    if offset.get() > index {
+                        // The parent element exists outside of the scope of this iterator.
+                        break parent_element;
+                    }
+                    index -= offset.get();
+                } else {
+                    // This is the top-most element, since it has no parent offset.
+                    break parent_element;
+                }
+            };
+
+            // Check whether the parent element overlaps with query.
+            if element.value.overlapping(self.query) {
+                let sublist_elements = unsafe {self.elements.get_unchecked((index + 1)..)};
+                self.elements = unsafe {self.elements.get_unchecked(..index)};
+                return Some(OverlappingElement {
+                    value: &element.value,
+                    sublist_elements,
+                    query: self.query,
+                    _marker: PhantomData,
+                });
+            } else {
+                // Truncate the elements, since they don't overlap.
+                self.elements = unsafe {self.elements.get_unchecked(..index)};
+            }
+        }
+
+        None
+    }
+}
+
 impl<'a, R, S, T> FusedIterator for Overlapping<'a, R, S, T>
 where
     R: RangeBounds<T>,
@@ -1519,6 +1568,22 @@ mod tests {
 
         assert_eq!(first_element_iter.next().unwrap().value, &(1..4));
         assert_eq!(first_element_iter.next().unwrap().value, &(2..3));
+    }
+
+    #[test]
+    fn overlapping_next_back() {
+        let nclist = NestedContainmentList::from_iter(vec![0..1, 1..2, 2..5, 2..4, 6..7]);
+        let mut overlapping = nclist.overlapping(&(1..4));
+
+        let second_element = overlapping.next_back().unwrap();
+        assert_eq!(second_element.value, &(2..5));
+        let mut second_element_sublist = second_element.sublist();
+        assert_eq!(second_element_sublist.next_back().unwrap().value, &(2..4));
+        assert_none!(second_element_sublist.next_back());
+        let first_element = overlapping.next_back().unwrap();
+        assert_eq!(first_element.value, &(1..2));
+        assert_none!(first_element.sublist().next_back());
+        assert_none!(overlapping.next_back());
     }
 
     #[test]
