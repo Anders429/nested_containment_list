@@ -269,6 +269,7 @@ where
 ///
 /// [`sublist()`]: OverlappingElement::sublist()
 /// [`Iterator`]: core::iter::Iterator
+#[derive(Debug)]
 pub struct Overlapping<'a, R, S, T>
 where
     R: RangeBounds<T> + 'a,
@@ -575,6 +576,7 @@ where
 ///
 /// [`Iterator`]: core::iter::Iterator
 /// [`sublist()`]: IterElement::sublist()
+#[derive(Debug)]
 pub struct Iter<R, T>
 where
     R: RangeBounds<T>,
