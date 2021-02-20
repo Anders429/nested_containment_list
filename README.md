@@ -4,7 +4,7 @@
 [![codecov.io](https://img.shields.io/codecov/c/gh/Anders429/nested_containment_list)](https://codecov.io/gh/Anders429/nested_containment_list)
 [![crates.io](https://img.shields.io/crates/v/nested_containment_list)](https://crates.io/crates/nested_containment_list)
 [![docs.rs](https://docs.rs/nested_containment_list/badge.svg)](https://docs.rs/nested_containment_list)
-[![MSRV](https://img.shields.io/badge/rustc-1.28.0+-yellow.svg)](#minimum-supported-rust-version)
+[![MSRV](https://img.shields.io/badge/rustc-1.31.0+-yellow.svg)](#minimum-supported-rust-version)
 [![License](https://img.shields.io/crates/l/nested_containment_list)](#license)
 
 Implementation of a Nested Containment List.
