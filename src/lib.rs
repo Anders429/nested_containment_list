@@ -94,14 +94,9 @@ extern crate std as alloc;
 #[cfg(not(rustc_1_36))]
 extern crate std as core;
 
-#[cfg(test)]
-#[macro_use]
-extern crate claim;
-#[cfg(test)]
-extern crate more_ranges;
-
 mod nestable;
 
+use crate::nestable::Nestable;
 use alloc::{collections::VecDeque, vec::Vec};
 use core::{
     borrow::Borrow,
@@ -113,7 +108,6 @@ use core::{
     num::NonZeroUsize,
     ops::RangeBounds,
 };
-use nestable::Nestable;
 
 /// Internal element, stored within the `NestedContainmentList` and its associated `Iterators`.
 ///
@@ -1001,18 +995,18 @@ where
                     let removed_element_parent_offset = removed_element.parent_offset;
                     let mut child_index = index + 1;
                     while child_index <= index + removed_element_sublist_len {
-                        let mut child_element =
-                            unsafe { 
-                                // SAFETY: `child_index` is guaranteed to be less than
-                                // `self.elements.len()`, as it is less than `index +
-                                // removed_element_sublist_len` which is invariantly guaranteed to
-                                // be within the bounds of `self.elements`.
-                                self.elements.get_unchecked_mut(child_index) };
+                        let mut child_element = unsafe {
+                            // SAFETY: `child_index` is guaranteed to be less than
+                            // `self.elements.len()`, as it is less than `index +
+                            // removed_element_sublist_len` which is invariantly guaranteed to
+                            // be within the bounds of `self.elements`.
+                            self.elements.get_unchecked_mut(child_index)
+                        };
                         child_element.parent_offset =
                             removed_element_parent_offset.map(|offset| unsafe {
                                 // SAFETY: Both `offset` and `child_element.parent_offset` are
                                 // guaranteed to be non-zero, so subtracting one from their sum is
-                                // also guaranteed to be non-zero. 
+                                // also guaranteed to be non-zero.
                                 NonZeroUsize::new_unchecked(
                                     offset.get() + child_element.parent_offset.unwrap().get() - 1,
                                 )
@@ -1192,14 +1186,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    #[cfg(not(rust_1_36))]
-    extern crate std as alloc;
-    #[cfg(not(rust_1_36))]
-    extern crate std as core;
-
+    use crate::NestedContainmentList;
     use alloc::vec;
+    use claim::assert_none;
     use core::{iter::FromIterator, ops::Range};
-    use NestedContainmentList;
 
     #[test]
     fn new() {

@@ -75,7 +75,7 @@ has temporal complexity *O(n + log(N))*, where *N* is the number of intervals st
 Nested Containment List, and *n* is the number of intervals overlapping with the query.
 
 ## Minimum Supported Rust Version
-This crate is guaranteed to compile on stable `rustc 1.28.0` and up. Use in a
+This crate is guaranteed to compile on stable `rustc 1.31.0` and up. Use in a
 [`no_std`](https://doc.rust-lang.org/1.7.0/book/using-rust-without-the-standard-library.html)
 environment requires stable `rustc 1.36.0` and up, due to the use of
 [`alloc`](https://doc.rust-lang.org/alloc/index.html).

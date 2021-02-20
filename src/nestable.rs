@@ -173,6 +173,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::nestable::Nestable;
+    use claim::assert_matches;
     use core::{
         cmp::Ordering::{Equal, Greater, Less},
         ops::RangeFull,
@@ -180,7 +182,6 @@ mod tests {
     use more_ranges::{
         RangeFromExclusive, RangeFromExclusiveToExclusive, RangeFromExclusiveToInclusive,
     };
-    use nestable::Nestable;
 
     #[test]
     fn range_full_contains() {
