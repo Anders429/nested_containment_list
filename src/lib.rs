@@ -818,16 +818,14 @@ where
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
         let mut indices = 0..self.elements.len();
         while let Some(index) = indices.next() {
+            let element = unsafe {
+                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
+                // obtained from the range `0..self.elements.len()`.
+                self.elements.get_unchecked(index)
+            };
             // If the value is ordered less than or equal to this element, then insert the value
             // before this element.
-            match value.ordering(
-                &unsafe {
-                    // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to
-                    // being obtained from the range `0..self.elements.len()`.
-                    self.elements.get_unchecked(index)
-                }
-                .value,
-            ) {
+            match value.ordering(&element.value) {
                 Ordering::Less | Ordering::Equal => {
                     // Find the length of the value's sublist.
                     let mut len = 0;
@@ -914,11 +912,6 @@ where
                 _ => {}
             }
 
-            let element = unsafe {
-                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
-                // obtained from the range `0..self.elements.len()`.
-                self.elements.get_unchecked(index)
-            };
             if Nestable::contains(&element.value, &value) {
                 // Proceed down this element's path.
                 sublist_indices.push(index);
@@ -979,14 +972,12 @@ where
         let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
         let mut indices = 0..self.elements.len();
         while let Some(index) = indices.next() {
-            match value.ordering(
-                &unsafe {
-                    // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to
-                    // being obtained from the range `0..self.elements.len()`.
-                    self.elements.get_unchecked(index)
-                }
-                .value,
-            ) {
+            let element = unsafe {
+                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
+                // obtained from the range `0..self.elements.len()`.
+                self.elements.get_unchecked(index)
+            };
+            match value.ordering(&element.value) {
                 // If the value is nestably equal to this element, remove it.
                 Ordering::Equal => {
                     // Correct all child elements' parent_offset values.
@@ -1039,11 +1030,6 @@ where
                 Ordering::Greater => {}
             }
 
-            let element = unsafe {
-                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
-                // obtained from the range `0..self.elements.len()`.
-                self.elements.get_unchecked(index)
-            };
             if Nestable::contains(&element.value, value) {
                 // Proceed down this element's path.
                 sublist_indices.push(index);
