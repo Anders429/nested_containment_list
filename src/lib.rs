@@ -408,7 +408,7 @@ where
 
             // Find top level parent element.
             let element = loop {
-                let parent_element = unsafe{
+                let parent_element = unsafe {
                     // SAFETY: `index` will always be less than self.elements.len(), since it is set
                     // to one less than it, and it only ever decreases.
                     self.elements.get_unchecked(index)
@@ -430,7 +430,8 @@ where
                 let sublist_elements = unsafe {
                     // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
                     // this indexing will never be out of bounds.
-                    self.elements.get_unchecked((index + 1)..)};
+                    self.elements.get_unchecked((index + 1)..)
+                };
                 self.elements = unsafe {
                     // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
                     // this indexing will never be out of bounds.
@@ -634,6 +635,42 @@ where
     /// ```
     fn size_hint(&self) -> (usize, Option<usize>) {
         (min(1, self.elements.len()), Some(self.elements.len()))
+    }
+}
+
+impl<R, T> DoubleEndedIterator for Iter<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.elements.is_empty() {
+            return None;
+        }
+
+        let mut sublist_elements = VecDeque::new();
+        let element = loop {
+            let parent_element = self.elements.pop_back().unwrap();
+            if let Some(offset) = parent_element.parent_offset {
+                if offset.get() > self.elements.len() {
+                    // The parent element exists outside of the scope of this iterator.
+                    break parent_element;
+                }
+                sublist_elements.push_front(parent_element);
+                self.elements
+                    .split_off(self.elements.len() - offset.get() + 1)
+                    .into_iter()
+                    .for_each(|element| sublist_elements.push_front(element));
+            } else {
+                // This is the top-most element, since it has no parent offset.
+                break parent_element;
+            }
+        };
+
+        Some(IterElement {
+            value: element.value,
+            sublist_elements,
+        })
     }
 }
 
@@ -1657,6 +1694,29 @@ mod tests {
         iter.next();
 
         assert_eq!(iter.size_hint(), (1, Some(1)));
+    }
+
+    #[test]
+    fn iter_next_back() {
+        let nclist = NestedContainmentList::from_iter(vec![1..5, 3..4, 2..4, 6..7]);
+        let mut iter = nclist.into_iter();
+
+        let second_element = iter.next_back().unwrap();
+        assert_eq!(second_element.value, 6..7);
+        assert_none!(second_element.sublist().next_back());
+        let first_element = iter.next_back().unwrap();
+        assert_eq!(first_element.value, 1..5);
+        let mut first_element_sublist = first_element.sublist();
+        let second_sublist_element = first_element_sublist.next_back().unwrap();
+        assert_eq!(second_sublist_element.value, 2..4);
+        let mut second_sublist_element_sublist = second_sublist_element.sublist();
+        assert_eq!(
+            second_sublist_element_sublist.next_back().unwrap().value,
+            3..4
+        );
+        assert_none!(second_sublist_element_sublist.next_back());
+        assert_none!(first_element_sublist.next_back());
+        assert_none!(iter.next_back());
     }
 
     #[test]
