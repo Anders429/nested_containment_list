@@ -948,140 +948,95 @@ where
     /// nclist.insert(1..2);
     /// ```
     pub fn insert(&mut self, value: R) {
-        // Direct insertion.
-        let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
-        let mut indices = 0..self.elements.len();
-        while let Some(index) = indices.next() {
-            let element = unsafe {
-                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
-                // obtained from the range `0..self.elements.len()`.
-                self.elements.get_unchecked(index)
+        // Binary search insertion.
+        let index = match self
+            .elements
+            .binary_search_by(|element| element.value.ordering(&value))
+        {
+            Ok(index) | Err(index) => index,
+        };
+
+        // Find the length of the value's sublist.
+        let mut len = 0;
+        let mut inner_indices = index..self.elements.len();
+        while let Some(inner_index) = inner_indices.next() {
+            let inner_element = unsafe {
+                // SAFETY: `inner_index` is guaranteed to be less than `self.elements.len()`, due to
+                // being obtained from the range `index..self.elements.len()`.
+                self.elements.get_unchecked_mut(inner_index)
             };
-            // If the value is ordered less than or equal to this element, then insert the value
-            // before this element.
-            match value.ordering(&element.value) {
-                Ordering::Less | Ordering::Equal => {
-                    // Find the length of the value's sublist.
-                    let mut len = 0;
-                    let mut inner_indices = index..self.elements.len();
-                    while let Some(inner_index) = inner_indices.next() {
-                        let inner_element = unsafe {
-                            // SAFETY: `inner_index` is guaranteed to be less than
-                            // `self.elements.len()`, due to being obtained from the range
-                            // `index..self.elements.len()`.
-                            self.elements.get_unchecked_mut(inner_index)
-                        };
-                        if Nestable::contains(&value, &inner_element.value) {
-                            len += inner_element.sublist_len + 1;
-                            inner_element.parent_offset = Some(unsafe {
-                                // `inner_index` will never be less than `index`, and adding one to
-                                // the value will guarantee it is not zero.
-                                NonZeroUsize::new_unchecked(inner_index - index + 1)
-                            });
-                            if inner_element.sublist_len > 0 {
-                                inner_indices.nth(inner_element.sublist_len - 1);
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-
-                    // Handle parent elements.
-                    for sublist_index in &sublist_indices {
-                        let parent_element = unsafe {
-                            // SAFETY: `sublist_index` is guaranteed to be within the bounds of
-                            // `self.elements`, due to `sublist_indices` only consisting of `index`
-                            // values (which are also guaranteed to be within the bounds; see
-                            // safety notes above).
-                            self.elements.get_unchecked_mut(*sublist_index)
-                        };
-
-                        let current_parent_sublist_len = parent_element.sublist_len;
-
-                        // Lengthen the sublist of every parent element.
-                        parent_element.sublist_len += 1;
-
-                        // Lengthen the parent offset of every child element after the inserted
-                        // element.
-                        let mut child_index = index;
-                        while child_index <= sublist_index + current_parent_sublist_len {
-                            let child_element = unsafe {
-                                // SAFETY: `child_index` will invariantly be within the bounds of
-                                // `self.elements`, since it is within the parent element's sublist.
-                                self.elements.get_unchecked_mut(child_index)
-                            };
-                            if child_index >= index {
-                                child_element.parent_offset = Some(unsafe {
-                                    // SAFETY: `child_element` is guaranteed to have a
-                                    // `parent_offset`, and therefore adding one to its value will
-                                    // also be non-zero.
-                                    NonZeroUsize::new_unchecked(
-                                        child_element.parent_offset.unwrap().get() + 1,
-                                    )
-                                });
-                            }
-                            child_index += child_element.sublist_len + 1;
-                        }
-                    }
-
-                    self.elements.insert(
-                        index,
-                        Element {
-                            value,
-                            sublist_len: len,
-                            parent_offset: sublist_indices.last().map(|sublist_index| unsafe {
-                                // SAFETY: `index` is always guaranteed to be strictly greater
-                                // than `sublist_index`, as `sublist_index` is obtained from
-                                // `sublist_indices`, which only consists of values from
-                                // `0..values.len()`, which is ascending, and `index` hasn't yet
-                                // been pushed to `sublist_indices`.
-                                NonZeroUsize::new_unchecked(index - sublist_index)
-                            }),
-                            _marker: PhantomData,
-                        },
-                    );
-                    // The element is inserted. We are done.
-                    return;
+            if Nestable::contains(&value, &inner_element.value) {
+                len += inner_element.sublist_len + 1;
+                inner_element.parent_offset = Some(unsafe {
+                    // SAFETY: `inner_index` will never be less than `index`, and adding one to the
+                    // value will guarantee it is not zero.
+                    NonZeroUsize::new_unchecked(inner_index - index + 1)
+                });
+                if inner_element.sublist_len > 0 {
+                    inner_indices.nth(inner_element.sublist_len - 1);
                 }
-                _ => {}
-            }
-
-            if Nestable::contains(&element.value, &value) {
-                // Proceed down this element's path.
-                sublist_indices.push(index);
             } else {
-                // If the value isn't contained in this element's sublist, we can skip it entirely.
-                if element.sublist_len > 0 {
-                    indices.nth(element.sublist_len - 1);
+                break;
+            }
+        }
+
+        // Handle parent elements.
+        let mut direct_parent_index = None;
+        if index > 0 {
+            let mut parent_index = index - 1;
+            loop {
+                let parent_element = unsafe { self.elements.get_unchecked_mut(parent_index) };
+                let current_parent_offset = parent_element.parent_offset;
+                if Nestable::contains(&parent_element.value, &value) {
+                    // Store the value's direct parent.
+                    if direct_parent_index.is_none() {
+                        direct_parent_index = Some(parent_index);
+                    }
+                    // Lengthen the parent element's sublist, since value is being added to it.
+                    let current_parent_sublist_len = parent_element.sublist_len;
+                    parent_element.sublist_len += 1;
+                    // Lengthen the parent offset of every direct child element after the inserted
+                    // element.
+                    let mut child_index = index;
+                    while child_index <= parent_index + current_parent_sublist_len {
+                        let child_element = unsafe {
+                            // SAFETY: `child_index` will invariantly be within the bounds of
+                            // `self.elements`, since it is within the parent element's sublist.
+                            self.elements.get_unchecked_mut(child_index)
+                        };
+                        child_element.parent_offset = Some(unsafe {
+                            // SAFETY: `child_element` is guaranteed to have a `parent_offset`, and
+                            // therefore adding one to its value will also be non-zero.
+                            NonZeroUsize::new_unchecked(
+                                child_element.parent_offset.unwrap().get() + 1,
+                            )
+                        });
+                        child_index += child_element.sublist_len + 1;
+                    }
+                }
+                // Advance to next parent element.
+                if let Some(offset) = current_parent_offset {
+                    parent_index -= offset.get();
+                } else {
+                    break;
                 }
             }
         }
 
-        // Since the value didn't belong somewhere in the middle, we must insert it at the end.
-        self.elements.push(Element {
-            value,
-            sublist_len: 0,
-            parent_offset: sublist_indices.last().map(|sublist_index| unsafe {
-                // SAFETY: `self.elements.len()` is always guaranteed to be strictly greater
-                // than `sublist_index`, as `sublist_index` is obtained from `sublist_indices`,
-                // which only consists of values from `0..self.elements.len()`.
-                NonZeroUsize::new_unchecked(self.elements.len() - sublist_index)
-            }),
-            _marker: PhantomData,
-        });
-        // Lengthen the sublist of every parent element.
-        //
-        // Note that no changes need to be made to any other `parent_offset` fields, because this
-        // element is inserted at the end.
-        for sublist_index in sublist_indices {
-            unsafe {
-                // SAFETY: `sublist_index` is guaranteed to be within the bounds of `self.elements`,
-                // due to `sublist_indices` only consisting of `index` values (which are also
-                // guaranteed to be within the bounds; see safety notes above).
-                self.elements.get_unchecked_mut(sublist_index)
-            }
-            .sublist_len += 1;
-        }
+        // Insert the element.
+        self.elements.insert(
+            index,
+            Element {
+                value,
+                sublist_len: len,
+                parent_offset: direct_parent_index.map(|parent_index| unsafe {
+                    // SAFETY: `index` is always guaranteed to be strictly greater than
+                    // `parent_index`, as `parent_index` is at most `index - 1`.
+                    NonZeroUsize::new_unchecked(index - parent_index)
+                }),
+                _marker: PhantomData,
+            },
+        );
     }
 
     /// Remove the specified value from the `NestedContainmentList`.
