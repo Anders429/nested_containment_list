@@ -618,6 +618,24 @@ where
         })
     }
 
+    /// Consumes the iterator, returning the last element.
+    ///
+    /// This method directly uses `next_back()` to jump straight to the end of the iterator.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..2, 3..4]);
+    ///
+    /// let mut iter = nclist.into_iter();
+    /// assert_eq!(iter.last().unwrap().value, 3..4);
+    /// ```
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+
     /// Returns the bounds on the remaining length of the iterator.
     ///
     /// The lower bound will always be `1` unless the iterator has been exhausted, in which case it
@@ -1695,6 +1713,16 @@ mod tests {
         iter.next();
 
         assert_eq!(iter.size_hint(), (1, Some(1)));
+    }
+
+    #[test]
+    fn iter_last() {
+        let nclist = NestedContainmentList::from_iter(vec![1..2, 2..5, 3..4]);
+
+        let last = nclist.into_iter().last().unwrap();
+
+        assert_eq!(last.value, 2..5);
+        assert_eq!(last.sublist().next().unwrap().value, 3..4);
     }
 
     #[test]
