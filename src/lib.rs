@@ -100,7 +100,7 @@ use crate::nestable::Nestable;
 use alloc::{collections::VecDeque, vec::Vec};
 use core::{
     borrow::Borrow,
-    cmp::{min, Ordering},
+    cmp::min,
     hint::unreachable_unchecked,
     iter::{once, Chain, FromIterator, FusedIterator, Iterator, Once},
     marker::PhantomData,
@@ -1057,80 +1057,66 @@ where
         Q: RangeBounds<T>,
         R: Borrow<Q>,
     {
-        // Direct removal.
-        let mut sublist_indices: Vec<usize> = Vec::with_capacity(self.elements.len());
-        let mut indices = 0..self.elements.len();
-        while let Some(index) = indices.next() {
-            let element = unsafe {
-                // SAFETY: `index` is guaranteed to be less than `self.elements.len()`, due to being
-                // obtained from the range `0..self.elements.len()`.
-                self.elements.get_unchecked(index)
-            };
-            match value.ordering(&element.value) {
-                // If the value is nestably equal to this element, remove it.
-                Ordering::Equal => {
-                    // Correct all child elements' parent_offset values.
-                    let removed_element = unsafe { self.elements.get_unchecked(index) };
-                    let removed_element_sublist_len = removed_element.sublist_len;
-                    let removed_element_parent_offset = removed_element.parent_offset;
-                    let mut child_index = index + 1;
-                    while child_index <= index + removed_element_sublist_len {
-                        let mut child_element = unsafe {
-                            // SAFETY: `child_index` is guaranteed to be less than
-                            // `self.elements.len()`, as it is less than `index +
-                            // removed_element_sublist_len` which is invariantly guaranteed to
-                            // be within the bounds of `self.elements`.
-                            self.elements.get_unchecked_mut(child_index)
+        // Binary search removal.
+        match self
+            .elements
+            .binary_search_by(|element| element.value.ordering(Borrow::borrow(value)))
+        {
+            Ok(index) => {
+                // Correct all child elements' parent_offset values.
+                let removed_element = unsafe {
+                    // SAFETY: Since `index` was obtained from the binary search, we can be sure it
+                    // is within the bounds of `self.elements`.
+                    self.elements.get_unchecked(index)
+                };
+                let removed_element_sublist_len = removed_element.sublist_len;
+                let removed_element_parent_offset = removed_element.parent_offset;
+                let mut child_index = index + 1;
+                while child_index <= index + removed_element_sublist_len {
+                    let child_element = unsafe {
+                        // SAFETY: `child_index` is guaranteed to be less than
+                        // `self.elements.len()`, as it is less than `index +
+                        // removed_element_sublist_len` which is invariantly guaranteed to be within
+                        // the bounds of `self.elements`.
+                        self.elements.get_unchecked_mut(child_index)
+                    };
+                    child_element.parent_offset =
+                        removed_element_parent_offset.map(|offset| unsafe {
+                            // SAFETY: Both `offset` and `child_element.parent_offset` are
+                            // guaranteed to be non-zero, so subtracting one from their sum is also
+                            // guaranteed to be non-zero.
+                            NonZeroUsize::new_unchecked(
+                                offset.get() + child_element.parent_offset.unwrap().get() - 1,
+                            )
+                        });
+                    child_index += child_element.sublist_len + 1;
+                }
+
+                // Shorten the sublist of every parent element.
+                if let Some(offset) = removed_element_parent_offset {
+                    let mut parent_index = index - offset.get();
+                    loop {
+                        let parent_element = unsafe {
+                            // SAFETY: `parent_index` is invariantly guaranteed to be within the
+                            // bounds of `self.elements`.
+                            self.elements.get_unchecked_mut(parent_index)
                         };
-                        child_element.parent_offset =
-                            removed_element_parent_offset.map(|offset| unsafe {
-                                // SAFETY: Both `offset` and `child_element.parent_offset` are
-                                // guaranteed to be non-zero, so subtracting one from their sum is
-                                // also guaranteed to be non-zero.
-                                NonZeroUsize::new_unchecked(
-                                    offset.get() + child_element.parent_offset.unwrap().get() - 1,
-                                )
-                            });
-                        child_index += child_element.sublist_len + 1;
-                    }
-
-                    // Remove the element.
-                    self.elements.remove(index);
-
-                    // Shorten the sublist of every parent element.
-                    for sublist_index in sublist_indices {
-                        unsafe {
-                            // SAFETY: `sublist_index` is guaranteed to be within the bounds of
-                            // `self.elements`, due to `sublist_indices` only consisting of `index`
-                            // values (which are also guaranteed to be within the bounds; see
-                            // safety notes above).
-                            self.elements.get_unchecked_mut(sublist_index)
+                        parent_element.sublist_len -= 1;
+                        if let Some(parent_offset) = parent_element.parent_offset {
+                            parent_index -= parent_offset.get();
+                        } else {
+                            break;
                         }
-                        .sublist_len -= 1;
                     }
-                    // The element is removed. We are done.
-                    return true;
                 }
-                // If the value is nestably less than this element, we have already passed where it
-                // would be.
-                Ordering::Less => {
-                    break;
-                }
-                Ordering::Greater => {}
-            }
 
-            if Nestable::contains(&element.value, value) {
-                // Proceed down this element's path.
-                sublist_indices.push(index);
-            } else {
-                // If the value isn't contained in this element's sublist, we can skip it entirely.
-                if element.sublist_len > 0 {
-                    indices.nth(element.sublist_len - 1);
-                }
+                // Remove the element.
+                self.elements.remove(index);
+
+                true
             }
+            Err(_) => false,
         }
-
-        false
     }
 }
 
