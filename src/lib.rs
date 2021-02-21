@@ -374,6 +374,24 @@ where
         }
     }
 
+    /// Consumes the iterator, returning the last element.
+    ///
+    /// This method directly uses `next_back()` to jump straight to the end of the iterator.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    /// use std::iter::FromIterator;
+    ///
+    /// let nclist = NestedContainmentList::from_iter(vec![1..2, 3..4, 5..6]);
+    ///
+    /// let mut overlapping = nclist.overlapping(&(1..4));
+    /// assert_eq!(overlapping.last().unwrap().value, &(3..4));
+    /// ```
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+
     /// Returns the bounds on the remaining length of the iterator.
     ///
     /// The lower bound will always be `1` unless the iterator has been exhausted, in which case it
@@ -1599,6 +1617,16 @@ mod tests {
     }
 
     #[test]
+    fn overlapping_last() {
+        let nclist = NestedContainmentList::from_iter(vec![1..2, 2..5, 3..4, 6..7]);
+
+        let last = nclist.overlapping(&(1..4)).last().unwrap();
+
+        assert_eq!(last.value, &(2..5));
+        assert_eq!(last.sublist().next().unwrap().value, &(3..4));
+    }
+
+    #[test]
     fn overlapping_size_hint() {
         let nclist = NestedContainmentList::from_iter(vec![1..4, 2..3, 4..7]);
         let query = 1..3;
@@ -1691,6 +1719,16 @@ mod tests {
     }
 
     #[test]
+    fn iter_last() {
+        let nclist = NestedContainmentList::from_iter(vec![1..2, 2..5, 3..4]);
+
+        let last = nclist.into_iter().last().unwrap();
+
+        assert_eq!(last.value, 2..5);
+        assert_eq!(last.sublist().next().unwrap().value, 3..4);
+    }
+
+    #[test]
     fn iter_size_hint() {
         let nclist = NestedContainmentList::from_iter(vec![1..5, 2..5, 6..7]);
         let iter = nclist.into_iter();
@@ -1713,16 +1751,6 @@ mod tests {
         iter.next();
 
         assert_eq!(iter.size_hint(), (1, Some(1)));
-    }
-
-    #[test]
-    fn iter_last() {
-        let nclist = NestedContainmentList::from_iter(vec![1..2, 2..5, 3..4]);
-
-        let last = nclist.into_iter().last().unwrap();
-
-        assert_eq!(last.value, 2..5);
-        assert_eq!(last.sublist().next().unwrap().value, 3..4);
     }
 
     #[test]
