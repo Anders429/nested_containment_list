@@ -1224,6 +1224,19 @@ where
     }
 }
 
+impl<R, T> Extend<R> for NestedContainmentList<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = R>,
+    {
+        iter.into_iter().for_each(|value| self.insert(value));
+    }
+}
+
 impl<R, T> From<Vec<R>> for NestedContainmentList<R, T>
 where
     R: RangeBounds<T>,
@@ -1795,6 +1808,18 @@ mod tests {
 
         assert_eq!(first_element_iter.next().unwrap().value, 1..4);
         assert_eq!(first_element_iter.next().unwrap().value, 2..3);
+    }
+
+    #[test]
+    fn extend() {
+        let mut nclist = NestedContainmentList::from(vec![2..3, 1..4, 7..8]);
+
+        nclist.extend(vec![0..5, 6..7, 7..9, 10..11]);
+
+        assert_eq!(
+            Into::<Vec<_>>::into(nclist),
+            vec![0..5, 1..4, 2..3, 6..7, 7..9, 7..8, 10..11]
+        );
     }
 
     #[test]
