@@ -97,7 +97,7 @@ extern crate std as core;
 mod nestable;
 
 use crate::nestable::Nestable;
-use alloc::{collections::VecDeque, vec::Vec};
+use alloc::{borrow::ToOwned, collections::VecDeque, vec::Vec};
 use core::{
     borrow::Borrow,
     cmp::min,
@@ -1235,6 +1235,17 @@ where
     }
 }
 
+impl<R, T> From<&'_ [R]> for NestedContainmentList<R, T>
+where
+    R: RangeBounds<T> + Clone,
+    T: Ord,
+{
+    #[inline]
+    fn from(s: &[R]) -> Self {
+        Self::from_iter(s.to_owned())
+    }
+}
+
 #[cfg(rustc_1_41)]
 /// Due to orphaning rules, this implementation is only available in `rustc 1.41.0` and above. On
 /// earlier `rustc` versions, a direct implementation of [`Into`] is provided instead, so that the
@@ -1791,6 +1802,19 @@ mod tests {
         let nclist = NestedContainmentList::from(vec![2..3, 1..4, 5..6]);
 
         assert_eq!(Into::<Vec<_>>::into(nclist), vec![1..4, 2..3, 5..6]);
+    }
+
+    #[test]
+    fn from_slice() {
+        let slice = &[2..3, 1..4, 5..6][..];
+        let nclist = NestedContainmentList::from(slice);
+        let mut iter = nclist.into_iter();
+
+        let first_element = iter.next().unwrap();
+        assert_eq!(first_element.value, 1..4);
+        assert_eq!(first_element.sublist().next().unwrap().value, 2..3);
+        let second_element = iter.next().unwrap();
+        assert_eq!(second_element.value, 5..6);
     }
 
     #[test]
