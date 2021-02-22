@@ -932,30 +932,7 @@ where
         Overlapping::new(&self.elements, query)
     }
 
-    /// Insert a new value into the `NestedContainmentList`.
-    ///
-    /// This insertion preserves the internal nested structure of the container, and has temporal
-    /// complexity of *O(log(n))*.
-    ///
-    /// If the `NestedContainmentList`'s `capacity` is not large enough, the `NestedContainmentList`
-    /// will reallocate.
-    ///
-    /// # Example
-    /// ```
-    /// use nested_containment_list::NestedContainmentList;
-    ///
-    /// let mut nclist = NestedContainmentList::new();
-    /// nclist.insert(1..2);
-    /// ```
-    pub fn insert(&mut self, value: R) {
-        // Binary search insertion.
-        let index = match self
-            .elements
-            .binary_search_by(|element| element.value.ordering(&value))
-        {
-            Ok(index) | Err(index) => index,
-        };
-
+    fn insert_at(&mut self, index: usize, value: R) {
         // Find the length of the value's sublist.
         let mut len = 0;
         let mut inner_indices = index..self.elements.len();
@@ -1037,6 +1014,33 @@ where
                 _marker: PhantomData,
             },
         );
+    }
+
+    /// Insert a new value into the `NestedContainmentList`.
+    ///
+    /// This insertion preserves the internal nested structure of the container, and has temporal
+    /// complexity of *O(log(n))*.
+    ///
+    /// If the `NestedContainmentList`'s `capacity` is not large enough, the `NestedContainmentList`
+    /// will reallocate.
+    ///
+    /// # Example
+    /// ```
+    /// use nested_containment_list::NestedContainmentList;
+    ///
+    /// let mut nclist = NestedContainmentList::new();
+    /// nclist.insert(1..2);
+    /// ```
+    pub fn insert(&mut self, value: R) {
+        // Binary search insertion.
+        let index = match self
+            .elements
+            .binary_search_by(|element| element.value.ordering(&value))
+        {
+            Ok(index) | Err(index) => index,
+        };
+
+        self.insert_at(index, value);
     }
 
     /// Remove the specified value from the `NestedContainmentList`.
@@ -1233,7 +1237,23 @@ where
     where
         I: IntoIterator<Item = R>,
     {
-        iter.into_iter().for_each(|value| self.insert(value));
+        // Sort the new values.
+        let mut values: Vec<_> = iter.into_iter().collect();
+        values.sort_unstable_by(Nestable::ordering);
+
+        let mut index = 0;
+        for value in values {
+            let prev_index = index;
+            // Each subsequent value must belong after the previously inserted value.
+            index = match self.elements[index..]
+                .binary_search_by(|element| element.value.ordering(&value))
+            {
+                Ok(index) | Err(index) => index,
+            };
+            self.insert_at(prev_index + index, value);
+            // The just-inserted value doesn't need to be included in the next iteration's search.
+            index += 1;
+        }
     }
 }
 
