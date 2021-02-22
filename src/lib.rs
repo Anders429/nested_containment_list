@@ -1224,6 +1224,64 @@ where
     }
 }
 
+impl<R, T> From<Vec<R>> for NestedContainmentList<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    #[inline]
+    fn from(v: Vec<R>) -> Self {
+        Self::from_iter(v)
+    }
+}
+
+#[cfg(rustc_1_41)]
+/// Due to orphaning rules, this implementation is only available in `rustc 1.41.0` and above. On
+/// earlier `rustc` versions, a direct implementation of [`Into`] is provided instead, so that the
+/// following example will still work:
+///
+/// ```
+/// use nested_containment_list::NestedContainmentList;
+///
+/// let nclist = NestedContainmentList::from(vec![2..3, 1..4, 3..5]);
+/// let vec: Vec<_> = nclist.into();
+/// ```
+///
+/// See
+/// [Implementing `Into` for conversions to external types in old versions of Rust](https://doc.rust-lang.org/nightly/core/convert/trait.Into.html#implementing-into-for-conversions-to-external-types-in-old-versions-of-rust)
+/// for more information.
+///
+/// [`Into`]: core::convert::Into
+impl<R, T> From<NestedContainmentList<R, T>> for Vec<R>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    #[inline]
+    fn from(nclist: NestedContainmentList<R, T>) -> Self {
+        nclist
+            .elements
+            .into_iter()
+            .map(|element| element.value)
+            .collect()
+    }
+}
+
+#[cfg(not(rustc_1_41))]
+impl<R, T> Into<Vec<R>> for NestedContainmentList<R, T>
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    #[inline]
+    fn into(self) -> Vec<R> {
+        self.elements
+            .into_iter()
+            .map(|element| element.value)
+            .collect()
+    }
+}
+
 impl<R, T> Default for NestedContainmentList<R, T>
 where
     R: RangeBounds<T>,
@@ -1248,7 +1306,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::NestedContainmentList;
-    use alloc::vec;
+    use alloc::{vec, vec::Vec};
     use claim::assert_none;
     use core::{iter::FromIterator, ops::Range};
 
@@ -1726,5 +1784,26 @@ mod tests {
 
         assert_eq!(first_element_iter.next().unwrap().value, 1..4);
         assert_eq!(first_element_iter.next().unwrap().value, 2..3);
+    }
+
+    #[test]
+    fn from_vec() {
+        let nclist = NestedContainmentList::from(vec![2..3, 1..4, 5..6]);
+
+        assert_eq!(Into::<Vec<_>>::into(nclist), vec![1..4, 2..3, 5..6]);
+    }
+
+    #[test]
+    fn into_vec() {
+        let vec: Vec<_> = NestedContainmentList::from_iter(vec![2..3, 1..4, 5..6]).into();
+
+        let nclist: NestedContainmentList<_, _> = vec.into();
+        let mut iter = nclist.into_iter();
+
+        let first_element = iter.next().unwrap();
+        assert_eq!(first_element.value, 1..4);
+        assert_eq!(first_element.sublist().next().unwrap().value, 2..3);
+        let second_element = iter.next().unwrap();
+        assert_eq!(second_element.value, 5..6);
     }
 }
