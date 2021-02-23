@@ -319,11 +319,7 @@ where
     ///
     /// [`sublist()`]: OverlappingElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.elements.is_empty() {
-                return None;
-            }
-
+        while !self.elements.is_empty() {
             let element = unsafe {
                 // SAFETY: Just checked that `self.elements` has at least one value.
                 self.elements.get_unchecked(0)
@@ -370,10 +366,11 @@ where
                 // Have already emitted every overlapping element.
                 Ordering::Less => {
                     self.elements = &[];
-                    return None;
                 }
             }
         }
+
+        None
     }
 
     /// Consumes the iterator, returning the last element.
