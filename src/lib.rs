@@ -100,7 +100,7 @@ use crate::nestable::Nestable;
 use alloc::{borrow::ToOwned, collections::VecDeque, vec::Vec};
 use core::{
     borrow::Borrow,
-    cmp::min,
+    cmp::{min, Ordering},
     hint::unreachable_unchecked,
     iter::{once, Chain, FromIterator, FusedIterator, Iterator, Once},
     marker::PhantomData,
@@ -287,29 +287,7 @@ where
     T: Ord,
 {
     fn new(elements: &'a [Element<R, T>], query: &'a S) -> Self {
-        // Find the index of the first overlapping interval in the top-most sublist.
-        let mut index = 0;
-        while index < elements.len() {
-            let element = unsafe {
-                // SAFETY: Since `index` is always less than `elements.len()`, this
-                // `get_unchecked()` usage will always be safe.
-                elements.get_unchecked(index)
-            };
-            if element.value.overlapping(query) {
-                break;
-            }
-            index += element.sublist_len + 1;
-        }
-        Overlapping {
-            elements: unsafe {
-                // SAFETY: `index` is always less than or equal to `elements.len()`, and therefore
-                // this will never be out of bounds. We can guarantee it is less than or equal to
-                // because adding each `element.sublist_len` will never push the value past
-                // `elements.len()`.
-                elements.get_unchecked(index..)
-            },
-            query,
-        }
+        Overlapping { elements, query }
     }
 }
 
@@ -341,36 +319,60 @@ where
     ///
     /// [`sublist()`]: OverlappingElement::sublist()
     fn next(&mut self) -> Option<Self::Item> {
-        if self.elements.is_empty() {
-            return None;
-        }
+        loop {
+            if self.elements.is_empty() {
+                return None;
+            }
 
-        let element = unsafe {
-            // SAFETY: Just checked that `self.elements` has at least one value.
-            self.elements.get_unchecked(0)
-        };
-        if element.value.overlapping(self.query) {
-            let sublist_elements = unsafe {
-                // SAFETY: `element.sublist_len` is invariantly guaranteed to only advance to a
-                // point within the bounds of `elements`. Therefore, this will never go out of
-                // bounds.
-                self.elements.get_unchecked(1..=element.sublist_len)
+            let element = unsafe {
+                // SAFETY: Just checked that `self.elements` has at least one value.
+                self.elements.get_unchecked(0)
             };
-            self.elements = unsafe {
-                // SAFETY: `element.sublist_len` will invariantly always be less than
-                // `elements.len()`, since the length of a sublist of an element never includes
-                // itself. Therefore, `element.sublist_len + 1 <= elements.len()`.
-                self.elements.get_unchecked((element.sublist_len + 1)..)
-            };
-            Some(OverlappingElement {
-                value: &element.value,
-                sublist_elements,
-                query: self.query,
-                _marker: PhantomData,
-            })
-        } else {
-            self.elements = &[];
-            None
+            if element.value.overlapping(self.query) {
+                let sublist_elements = unsafe {
+                    // SAFETY: `element.sublist_len` is invariantly guaranteed to only advance to a
+                    // point within the bounds of `elements`. Therefore, this will never go out of
+                    // bounds.
+                    self.elements.get_unchecked(1..=element.sublist_len)
+                };
+                self.elements = unsafe {
+                    // SAFETY: `element.sublist_len` will invariantly always be less than
+                    // `elements.len()`, since the length of a sublist of an element never includes
+                    // itself. Therefore, `element.sublist_len + 1 <= elements.len()`.
+                    self.elements.get_unchecked((element.sublist_len + 1)..)
+                };
+                return Some(OverlappingElement {
+                    value: &element.value,
+                    sublist_elements,
+                    query: self.query,
+                    _marker: PhantomData,
+                });
+            }
+            match self.query.ordering(&element.value) {
+                // Have not yet chopped off the front elements.
+                Ordering::Greater | Ordering::Equal => {
+                    let index = match self.elements.binary_search_by(|element| {
+                        if element.value.overlapping(self.query) {
+                            Ordering::Greater
+                        } else {
+                            self.query.ordering(&element.value).reverse()
+                        }
+                    }) {
+                        Ok(index) | Err(index) => index,
+                    };
+                    self.elements = unsafe {
+                        // SAFETY: Since `index` is obtained from a binary search over
+                        // `self.elements`, this range will always be within the bounds of
+                        // `self.elements`.
+                        self.elements.get_unchecked(index..)
+                    };
+                }
+                // Have already emitted every overlapping element.
+                Ordering::Less => {
+                    self.elements = &[];
+                    return None;
+                }
+            }
         }
     }
 
