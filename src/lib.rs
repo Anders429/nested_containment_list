@@ -94,9 +94,13 @@ extern crate std as alloc;
 #[cfg(not(rustc_1_36))]
 extern crate std as core;
 
+mod element;
 mod nestable;
 
-use crate::nestable::Nestable;
+use crate::{
+    element::{Element, ParentElements},
+    nestable::Nestable,
+};
 use alloc::{borrow::ToOwned, collections::VecDeque, vec::Vec};
 use core::{
     borrow::Borrow,
@@ -108,72 +112,6 @@ use core::{
     num::NonZeroUsize,
     ops::RangeBounds,
 };
-
-/// Internal element, stored within the `NestedContainmentList` and its associated `Iterators`.
-///
-/// The values in here are more directly used in the external API's `OverlappingElement` and
-/// `IterElement` types.
-#[derive(Debug)]
-struct Element<R, T>
-where
-    R: RangeBounds<T>,
-    T: Ord,
-{
-    value: R,
-    sublist_len: usize,
-    // Direct parent's offset, if the element has a parent. This is the absolute distance between
-    // this element and its direct parent element.
-    parent_offset: Option<NonZeroUsize>,
-    _marker: PhantomData<T>,
-}
-
-trait ParentElements {
-    type Item;
-
-    unsafe fn top_most_parent_element_with_index(&self, index: usize) -> (&Self::Item, usize);
-    unsafe fn top_most_parent_element(&self, index: usize) -> &Self::Item;
-}
-
-impl<R, T> ParentElements for [Element<R, T>]
-where
-    R: RangeBounds<T>,
-    T: Ord,
-{
-    type Item = Element<R, T>;
-
-    /// Find the element at `index`'s top-most parent element within `self`, alongside its index.
-    ///
-    /// # Safety
-    /// The caller must guarantee that `index` is within the bounds of `self`.
-    unsafe fn top_most_parent_element_with_index(
-        &self,
-        mut index: usize,
-    ) -> (&Element<R, T>, usize) {
-        loop {
-            // Note that `index` must be within the bounds of `self`.
-            let element = self.get_unchecked(index);
-            if let Some(offset) = element.parent_offset {
-                if offset.get() > index {
-                    // The parent element exists outside of the scope of this
-                    // iterator.
-                    return (element, index);
-                }
-                index -= offset.get();
-            } else {
-                // This is the top-most element, since it has no parent offset.
-                return (element, index);
-            }
-        }
-    }
-
-    /// Find the element at `index`'s top-most parent element within `self`.
-    ///
-    /// # Safety
-    /// The caller must guarantee that `index` is within the bounds of `self`.
-    unsafe fn top_most_parent_element(&self, index: usize) -> &Element<R, T> {
-        self.top_most_parent_element_with_index(index).0
-    }
-}
 
 /// An element contained within an [`Overlapping`].
 ///
