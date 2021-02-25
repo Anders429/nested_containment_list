@@ -127,6 +127,42 @@ where
     _marker: PhantomData<T>,
 }
 
+trait ParentElements {
+    type Item;
+
+    unsafe fn top_most_parent_element(&self, index: usize) -> &Self::Item;
+}
+
+impl<R, T> ParentElements for [Element<R, T>]
+where
+    R: RangeBounds<T>,
+    T: Ord,
+{
+    type Item = Element<R, T>;
+
+    /// Find the element at `index`'s top-most parent element within `self`.
+    ///
+    /// # Safety
+    /// The caller must guarantee that `index` is within the bounds of `self`.
+    unsafe fn top_most_parent_element(&self, mut index: usize) -> &Element<R, T> {
+        loop {
+            // Note that `index` must be within the bounds of `self`.
+            let element = self.get_unchecked(index);
+            if let Some(offset) = element.parent_offset {
+                if offset.get() > index {
+                    // The parent element exists outside of the scope of this
+                    // iterator.
+                    return element;
+                }
+                index -= offset.get();
+            } else {
+                // This is the top-most element, since it has no parent offset.
+                return element;
+            }
+        }
+    }
+}
+
 /// An element contained within an [`Overlapping`].
 ///
 /// This element allows access to its contained value `I` and its sub-elements which also overlap
@@ -353,25 +389,12 @@ where
                     if size != 0 {
                         while size > 1 {
                             let half = size / 2;
-                            let mut mid = index + half;
+                            let mid = index + half;
 
-                            let mid_element = loop {
-                                let mid_element = unsafe {
-                                    // SAFETY: The maximum `mid` can be is bound above by
-                                    // `size / 2 + size / 4 + size / 8 + ...`
-                                    self.elements.get_unchecked(mid)
-                                };
-                                if let Some(offset) = mid_element.parent_offset {
-                                    if offset.get() > mid {
-                                        // The parent element exists outside of the scope of this
-                                        // iterator.
-                                        break mid_element;
-                                    }
-                                    mid -= offset.get();
-                                } else {
-                                    // This is the top-most element, since it has no parent offset.
-                                    break mid_element;
-                                }
+                            let mid_element = unsafe {
+                                // SAFETY: The maximum `mid` can be is bound above by
+                                // `size / 2 + size / 4 + size / 8 + ...`
+                                self.elements.top_most_parent_element(mid)
                             };
 
                             index = match if mid_element.value.overlapping(self.query) {
@@ -380,7 +403,7 @@ where
                                 mid_element.value.ordering(self.query)
                             } {
                                 Ordering::Greater => index,
-                                Ordering::Less | Ordering::Equal => index + half,
+                                Ordering::Less | Ordering::Equal => mid,
                             };
                             size -= half;
                         }
@@ -516,25 +539,12 @@ where
                     if size != 0 {
                         while size > 1 {
                             let half = size / 2;
-                            let mut mid = index + half;
+                            let mid = index + half;
 
-                            let mid_element = loop {
-                                let mid_element = unsafe {
-                                    // SAFETY: The maximum `mid` can be is bound above by
-                                    // `size / 2 + size / 4 + size / 8 + ...`
-                                    self.elements.get_unchecked(mid)
-                                };
-                                if let Some(offset) = mid_element.parent_offset {
-                                    if offset.get() > mid {
-                                        // The parent element exists outside of the scope of this
-                                        // iterator.
-                                        break mid_element;
-                                    }
-                                    mid -= offset.get();
-                                } else {
-                                    // This is the top-most element, since it has no parent offset.
-                                    break mid_element;
-                                }
+                            let mid_element = unsafe {
+                                // SAFETY: The maximum `mid` can be is bound above by
+                                // `size / 2 + size / 4 + size / 8 + ...`
+                                self.elements.top_most_parent_element(mid)
                             };
 
                             index = match if mid_element.value.overlapping(self.query) {
@@ -543,7 +553,7 @@ where
                                 mid_element.value.ordering(self.query)
                             } {
                                 Ordering::Greater => index,
-                                Ordering::Less | Ordering::Equal => index + half,
+                                Ordering::Less | Ordering::Equal => mid,
                             };
                             size -= half;
                         }
