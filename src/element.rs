@@ -70,3 +70,155 @@ where
         self.top_most_parent_element_with_index(index).0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::element::{Element, ParentElements};
+    use core::{marker::PhantomData, num::NonZeroUsize, ptr};
+
+    #[test]
+    fn finds_top_most_parent_element() {
+        let elements = &[
+            Element {
+                value: 1..4,
+                sublist_len: 2,
+                parent_offset: None,
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..4,
+                sublist_len: 1,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..3,
+                sublist_len: 0,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+        ];
+
+        assert!(ptr::eq(
+            unsafe { elements.top_most_parent_element(2) },
+            &elements[0]
+        ));
+    }
+
+    #[test]
+    fn finds_top_most_parent_element_no_parent() {
+        let elements = &[Element {
+            value: 1..4,
+            sublist_len: 2,
+            parent_offset: None,
+            _marker: PhantomData,
+        }];
+
+        assert!(ptr::eq(
+            unsafe { elements.top_most_parent_element(0) },
+            &elements[0]
+        ));
+    }
+
+    #[test]
+    fn finds_top_most_parent_element_offset_out_of_scope() {
+        let elements = &[
+            Element {
+                value: 1..4,
+                sublist_len: 2,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..4,
+                sublist_len: 1,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..3,
+                sublist_len: 0,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+        ];
+
+        assert!(ptr::eq(
+            unsafe { elements.top_most_parent_element(2) },
+            &elements[0]
+        ));
+    }
+
+    #[test]
+    fn finds_top_most_parent_element_with_index() {
+        let elements = &[
+            Element {
+                value: 1..4,
+                sublist_len: 2,
+                parent_offset: None,
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..4,
+                sublist_len: 1,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..3,
+                sublist_len: 0,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+        ];
+
+        let result = unsafe { elements.top_most_parent_element_with_index(2) };
+
+        assert!(ptr::eq(result.0, &elements[0]));
+        assert_eq!(result.1, 0);
+    }
+
+    #[test]
+    fn finds_top_most_parent_element_with_index_no_parent() {
+        let elements = &[Element {
+            value: 1..4,
+            sublist_len: 2,
+            parent_offset: None,
+            _marker: PhantomData,
+        }];
+
+        let result = unsafe { elements.top_most_parent_element_with_index(0) };
+
+        assert!(ptr::eq(result.0, &elements[0]));
+        assert_eq!(result.1, 0);
+    }
+
+    #[test]
+    fn finds_top_most_parent_element_with_index_offset_out_of_scope() {
+        let elements = &[
+            Element {
+                value: 1..4,
+                sublist_len: 2,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..4,
+                sublist_len: 1,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+            Element {
+                value: 2..3,
+                sublist_len: 0,
+                parent_offset: NonZeroUsize::new(1),
+                _marker: PhantomData,
+            },
+        ];
+
+        let result = unsafe { elements.top_most_parent_element_with_index(2) };
+
+        assert!(ptr::eq(result.0, &elements[0]));
+        assert_eq!(result.1, 0);
+    }
+}
