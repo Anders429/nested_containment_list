@@ -347,19 +347,68 @@ where
             match self.query.ordering(&element.value) {
                 // Have not yet chopped off the front elements.
                 Ordering::Greater | Ordering::Equal => {
-                    let index = match self.elements.binary_search_by(|element| {
-                        if element.value.overlapping(self.query) {
+                    // Custom version of a binary search.
+                    let mut index = 0;
+                    let mut size = self.elements.len();
+                    if size != 0 {
+                        while size > 1 {
+                            let mut half = size / 2;
+                            let mut mid = index + half;
+
+                            let mid_element = loop {
+                                let mid_element = unsafe {
+                                    // SAFETY: The maximum `mid` can be is bound above by
+                                    // `size / 2 + size / 4 + size / 8 + ...`
+                                    self.elements.get_unchecked(mid)
+                                };
+                                if let Some(offset) = mid_element.parent_offset {
+                                    if offset.get() > (mid - index) {
+                                        // The parent element exists outside of the scope of this
+                                        // iterator.
+                                        break mid_element;
+                                    }
+                                    mid -= offset.get();
+                                } else {
+                                    // This is the top-most element, since it has no parent offset.
+                                    break mid_element;
+                                }
+                            };
+
+                            index = match if mid_element.value.overlapping(self.query) {
+                                Ordering::Greater
+                            } else {
+                                mid_element.value.ordering(self.query)
+                            } {
+                                Ordering::Greater => {
+                                    half += mid_element.sublist_len;
+                                    index
+                                }
+                                Ordering::Less | Ordering::Equal => mid,
+                            };
+                            size -= half;
+                        }
+                        let index_element = unsafe {
+                            // SAFETY: Since `index` is obtained from the above binary search, where
+                            // its max possible value is `size / 2 + size / 4 + size / 8 + ...`.
+                            // Therefore it will be within the bounds of `self.elements`.
+                            self.elements.get_unchecked(index)
+                        };
+                        match if index_element.value.overlapping(self.query) {
                             Ordering::Greater
                         } else {
-                            self.query.ordering(&element.value).reverse()
+                            index_element.value.ordering(self.query)
+                        } {
+                            Ordering::Less => {
+                                index += 1;
+                            }
+                            Ordering::Greater | Ordering::Equal => {}
                         }
-                    }) {
-                        Ok(index) | Err(index) => index,
-                    };
+                    }
                     self.elements = unsafe {
-                        // SAFETY: Since `index` is obtained from a binary search over
-                        // `self.elements`, this range will always be within the bounds of
-                        // `self.elements`.
+                        // SAFETY: Since `index` is obtained from the above binary search, where its
+                        // max possible value is `size / 2 + size / 4 + size / 8 + ... + 1`.
+                        // Therefore it will be within the bounds of `self.elements`, being at most
+                        // `self.elements.len()`.
                         self.elements.get_unchecked(index..)
                     };
                 }
@@ -421,6 +470,18 @@ where
     T: Ord,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
+        // while !self.elements.is_empty() {
+        //     let last_element = unsafe {
+        //         self.elements.get_unchecked(self.elements.len() - 1)
+        //     };
+        //     if last_element.overlapping(self.query) || match last_element.ordering(self.query) {
+        //         Ordering::Less | Ordering::Equal => true,
+        //         Ordering::Greater => false,
+        //     } {
+
+        //     }
+        // }
+
         while !self.elements.is_empty() {
             let mut index = self.elements.len() - 1;
 
@@ -1656,6 +1717,16 @@ mod tests {
 
         assert_eq!(overlapping.next().unwrap().value, &(1..4));
         assert_none!(overlapping.next());
+    }
+
+    #[test]
+    fn overlapping_with_inner_not_overlapping() {
+        let nclist = NestedContainmentList::from(vec![1..5, 1..2, 2..3, 4..5, 0..0]);
+        let mut overlapping = nclist.overlapping(&(2..3));
+
+        let element = overlapping.next().unwrap();
+        assert_eq!(element.value, &(1..5));
+        assert_eq!(element.sublist().next().unwrap().value, &(2..3));
     }
 
     #[test]
