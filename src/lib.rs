@@ -130,6 +130,7 @@ where
 trait ParentElements {
     type Item;
 
+    unsafe fn top_most_parent_element_with_index(&self, index: usize) -> (&Self::Item, usize);
     unsafe fn top_most_parent_element(&self, index: usize) -> &Self::Item;
 }
 
@@ -140,11 +141,14 @@ where
 {
     type Item = Element<R, T>;
 
-    /// Find the element at `index`'s top-most parent element within `self`.
+    /// Find the element at `index`'s top-most parent element within `self`, alongside its index.
     ///
     /// # Safety
     /// The caller must guarantee that `index` is within the bounds of `self`.
-    unsafe fn top_most_parent_element(&self, mut index: usize) -> &Element<R, T> {
+    unsafe fn top_most_parent_element_with_index(
+        &self,
+        mut index: usize,
+    ) -> (&Element<R, T>, usize) {
         loop {
             // Note that `index` must be within the bounds of `self`.
             let element = self.get_unchecked(index);
@@ -152,14 +156,22 @@ where
                 if offset.get() > index {
                     // The parent element exists outside of the scope of this
                     // iterator.
-                    return element;
+                    return (element, index);
                 }
                 index -= offset.get();
             } else {
                 // This is the top-most element, since it has no parent offset.
-                return element;
+                return (element, index);
             }
         }
+    }
+
+    /// Find the element at `index`'s top-most parent element within `self`.
+    ///
+    /// # Safety
+    /// The caller must guarantee that `index` is within the bounds of `self`.
+    unsafe fn top_most_parent_element(&self, index: usize) -> &Element<R, T> {
+        self.top_most_parent_element_with_index(index).0
     }
 }
 
@@ -491,25 +503,13 @@ where
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         while !self.elements.is_empty() {
-            let mut index = self.elements.len() - 1;
-
             // Find top level parent element.
-            let element = loop {
-                let parent_element = unsafe {
-                    // SAFETY: `index` will always be less than self.elements.len(), since it is set
-                    // to one less than it, and it only ever decreases.
-                    self.elements.get_unchecked(index)
-                };
-                if let Some(offset) = parent_element.parent_offset {
-                    if offset.get() > index {
-                        // The parent element exists outside of the scope of this iterator.
-                        break parent_element;
-                    }
-                    index -= offset.get();
-                } else {
-                    // This is the top-most element, since it has no parent offset.
-                    break parent_element;
-                }
+            let (element, index) = unsafe {
+                // SAFETY: `self.elements.len() - 1` wll always be less than `self.elements.len()`.
+                // Additionally, it is guaranteed to be at least `0`, because `self.elements` is not
+                // empty.
+                self.elements
+                    .top_most_parent_element_with_index(self.elements.len() - 1)
             };
 
             if element.value.overlapping(self.query) {
