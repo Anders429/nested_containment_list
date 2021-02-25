@@ -352,7 +352,7 @@ where
                     let mut size = self.elements.len();
                     if size != 0 {
                         while size > 1 {
-                            let mut half = size / 2;
+                            let half = size / 2;
                             let mut mid = index + half;
 
                             let mid_element = loop {
@@ -362,7 +362,7 @@ where
                                     self.elements.get_unchecked(mid)
                                 };
                                 if let Some(offset) = mid_element.parent_offset {
-                                    if offset.get() > (mid - index) {
+                                    if offset.get() > mid {
                                         // The parent element exists outside of the scope of this
                                         // iterator.
                                         break mid_element;
@@ -379,11 +379,8 @@ where
                             } else {
                                 mid_element.value.ordering(self.query)
                             } {
-                                Ordering::Greater => {
-                                    half += mid_element.sublist_len;
-                                    index
-                                }
-                                Ordering::Less | Ordering::Equal => mid,
+                                Ordering::Greater => index,
+                                Ordering::Less | Ordering::Equal => index + half,
                             };
                             size -= half;
                         }
@@ -470,18 +467,6 @@ where
     T: Ord,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        // while !self.elements.is_empty() {
-        //     let last_element = unsafe {
-        //         self.elements.get_unchecked(self.elements.len() - 1)
-        //     };
-        //     if last_element.overlapping(self.query) || match last_element.ordering(self.query) {
-        //         Ordering::Less | Ordering::Equal => true,
-        //         Ordering::Greater => false,
-        //     } {
-
-        //     }
-        // }
-
         while !self.elements.is_empty() {
             let mut index = self.elements.len() - 1;
 
@@ -504,7 +489,6 @@ where
                 }
             };
 
-            // Check whether the parent element overlaps with query.
             if element.value.overlapping(self.query) {
                 let sublist_elements = unsafe {
                     // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
@@ -523,12 +507,76 @@ where
                     _marker: PhantomData,
                 });
             }
-            // Truncate the elements, since they don't overlap.
-            self.elements = unsafe {
-                // SAFETY: `index` is guaranteed to be at most `self.elements.len() - 1`, so
-                // this indexing will never be out of bounds.
-                self.elements.get_unchecked(..index)
-            };
+            match self.query.ordering(&element.value) {
+                // Have not yet chopped off the back elements.
+                Ordering::Less | Ordering::Equal => {
+                    // Custom version of a binary search.
+                    let mut index = 0;
+                    let mut size = self.elements.len();
+                    if size != 0 {
+                        while size > 1 {
+                            let half = size / 2;
+                            let mut mid = index + half;
+
+                            let mid_element = loop {
+                                let mid_element = unsafe {
+                                    // SAFETY: The maximum `mid` can be is bound above by
+                                    // `size / 2 + size / 4 + size / 8 + ...`
+                                    self.elements.get_unchecked(mid)
+                                };
+                                if let Some(offset) = mid_element.parent_offset {
+                                    if offset.get() > mid {
+                                        // The parent element exists outside of the scope of this
+                                        // iterator.
+                                        break mid_element;
+                                    }
+                                    mid -= offset.get();
+                                } else {
+                                    // This is the top-most element, since it has no parent offset.
+                                    break mid_element;
+                                }
+                            };
+
+                            index = match if mid_element.value.overlapping(self.query) {
+                                Ordering::Less
+                            } else {
+                                mid_element.value.ordering(self.query)
+                            } {
+                                Ordering::Greater => index,
+                                Ordering::Less | Ordering::Equal => index + half,
+                            };
+                            size -= half;
+                        }
+                        let index_element = unsafe {
+                            // SAFETY: Since `index` is obtained from the above binary search, where
+                            // its max possible value is `size / 2 + size / 4 + size / 8 + ...`.
+                            // Therefore it will be within the bounds of `self.elements`.
+                            self.elements.get_unchecked(index)
+                        };
+                        match if index_element.value.overlapping(self.query) {
+                            Ordering::Less
+                        } else {
+                            index_element.value.ordering(self.query)
+                        } {
+                            Ordering::Less => {
+                                index += 1;
+                            }
+                            Ordering::Greater | Ordering::Equal => {}
+                        }
+                    }
+                    self.elements = unsafe {
+                        // SAFETY: Since `index` is obtained from the above binary search, where its
+                        // max possible value is `size / 2 + size / 4 + size / 8 + ... + 1`.
+                        // Therefore it will be within the bounds of `self.elements`, being at most
+                        // `self.elements.len()`.
+                        self.elements.get_unchecked(..index)
+                    };
+                }
+                // Have already emitted every overlapping element.
+                Ordering::Greater => {
+                    self.elements = &[];
+                }
+            }
         }
 
         None
