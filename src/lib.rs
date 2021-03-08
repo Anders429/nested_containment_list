@@ -1352,7 +1352,7 @@ where
 /// for more information.
 ///
 /// [`Into`]: core::convert::Into
-#[cfg_attr(feature = "doc", doc_item::since("1.41.0"))]
+#[cfg_attr(feature = "doc_item", doc_item::since("1.41.0"))]
 impl<R, T> From<NestedContainmentList<R, T>> for Vec<R>
 where
     R: RangeBounds<T>,
