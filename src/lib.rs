@@ -93,6 +93,8 @@ extern crate alloc;
 extern crate std as alloc;
 #[cfg(not(rustc_1_36))]
 extern crate std as core;
+#[cfg(feature = "doc")]
+extern crate doc_item;
 
 mod element;
 mod nestable;
@@ -1352,6 +1354,7 @@ where
 /// for more information.
 ///
 /// [`Into`]: core::convert::Into
+#[cfg_attr(feature = "doc", doc_item::since("1.41.0"))]
 impl<R, T> From<NestedContainmentList<R, T>> for Vec<R>
 where
     R: RangeBounds<T>,

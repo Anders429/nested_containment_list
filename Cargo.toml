@@ -12,9 +12,15 @@ categories = ["algorithms", "data-structures", "no-std", "science"]
 build = "build.rs"
 exclude = [".github/*"]
 
+[dependencies]
+doc_item = {version = "0.1.1", optional = true}
+
 [build-dependencies]
 autocfg = "1.0.1"
 
 [dev-dependencies]
 claim = "0.5.0"
 more_ranges = "0.1.0"
+
+[features]
+doc = ["doc_item"]
