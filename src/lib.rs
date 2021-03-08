@@ -93,8 +93,6 @@ extern crate alloc;
 extern crate std as alloc;
 #[cfg(not(rustc_1_36))]
 extern crate std as core;
-#[cfg(feature = "doc")]
-extern crate doc_item;
 
 mod element;
 mod nestable;
